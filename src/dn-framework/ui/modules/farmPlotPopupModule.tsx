@@ -186,7 +186,9 @@ function EmptyState({ plot, popupMgr }: { plot: any, popupMgr: PopupManager }) {
 // ── Growing state ──────────────────────────────────────────────────────────────
 
 function GrowingState({ plot, progressPct, remainingS }: { plot: any, progressPct: number, remainingS: number }) {
-  const fillWidth = `${progressPct}%`
+  // Use pixel width (number) — template literal strings are not assignable to PositionUnit
+  const BAR_WIDTH = 400
+  const fillWidthPx = Math.round((progressPct / 100) * BAR_WIDTH)
 
   return (
     <UiEntity
@@ -201,11 +203,11 @@ function GrowingState({ plot, progressPct, remainingS }: { plot: any, progressPc
 
       {/* Progress bar */}
       <UiEntity
-        uiTransform={{ width: 400, height: 22, margin: { bottom: 10 } }}
+        uiTransform={{ width: BAR_WIDTH, height: 22, margin: { bottom: 10 } }}
         uiBackground={{ color: BG_BAR_BG }}
       >
         <UiEntity
-          uiTransform={{ width: fillWidth, height: '100%' }}
+          uiTransform={{ width: fillWidthPx, height: '100%' }}
           uiBackground={{ color: BG_BAR_FILL }}
         />
       </UiEntity>
