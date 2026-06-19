@@ -2,9 +2,11 @@
  * recipeData.ts — Recipe definitions for dcl_popupInteractiveA
  *
  * Recipe loop:
- *   Gather → Iron Ore, Coal, Wood, Stone (resource nodes in the world)
- *   Smelt  → Iron Bar (Smelter: Iron Ore ×2 + Coal ×1)
- *   Craft  → Rope, Iron Sword, Shield (Workbench)
+ *   Gather -> Iron Ore, Coal, Wood, Stone (resource nodes in the world)
+ *   Smelt  -> Iron Bar (Smelter: Iron Ore x2 + Coal x1)
+ *   Craft  -> Rope, Iron Sword, Shield (Workbench)
+ *   Farm   -> Plant Wheat Seeds -> Harvest Wheat (Farm Plots at Z~138-152)
+ *   Trade  -> Buy Wheat Seeds for Gold / Sell Wheat for Gold (Trader at Z~147)
  *
  * Import Recipe type from dn-framework/ui/popupManager.
  * Add new recipe arrays here as new stations are added.
@@ -60,5 +62,26 @@ export const WORKBENCH_RECIPES: Recipe[] = [
       { itemId: 'stone',    name: 'Stone',    quantity: 2 },
     ],
     output: { itemId: 'shield', name: 'Shield', quantity: 1 },
+  },
+]
+
+// ── Trader ─────────────────────────────────────────────────────────────────────
+// Buy seeds with Gold / Sell Wheat for Gold.
+// Displayed in the crafting popup with label "TRADE".
+
+export const TRADER_RECIPES: Recipe[] = [
+  {
+    id: 'buy_wheat_seeds',
+    name: 'Wheat Seeds x3',
+    category: 'Buy',
+    ingredients: [{ itemId: 'gold', name: 'Gold', quantity: 15 }],
+    output: { itemId: 'wheat_seeds', name: 'Wheat Seeds', quantity: 3 },
+  },
+  {
+    id: 'sell_wheat',
+    name: 'Sell Wheat x3',
+    category: 'Sell',
+    ingredients: [{ itemId: 'wheat', name: 'Wheat', quantity: 3 }],
+    output: { itemId: 'gold', name: 'Gold', quantity: 10 },
   },
 ]
