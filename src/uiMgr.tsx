@@ -2,13 +2,14 @@
  * uiMgr.tsx — React-ECS UI for dcl_popupInteractiveA
  *
  * Layout (all absolute-positioned, layered):
- *   [top-left → 410px]  CoordsModule  — X/Y/Z + Y rotation (avoid DCL left chrome)
- *   [top-right ← 410px] PlayerInfoModule — player name (avoid DCL right chrome)
- *   [mid-right ← 16px, top 280px] InventoryPanel — items collected so far
+ *   [top-left -> 410px]  CoordsModule  — X/Y/Z + Y rotation (avoid DCL left chrome)
+ *   [top-right <- 410px] PlayerInfoModule — player name (avoid DCL right chrome)
+ *   [mid-right <- 16px, top 280px] InventoryPanel — items collected so far
  *   [lower-right]       FloatNotificationModule — drift-up loot notifications
  *   [overlay]           LootWindowModule — chest "you received" modal
  *   [overlay]           ChoicePopupModule — binary item choice
  *   [overlay]           CraftingPopupModule — recipe list + ingredient check
+ *   [overlay]           FarmPlotPopupModule — farm plot state + plant/harvest
  *   [bottom-center]     HintPanel — control hints
  */
 
@@ -21,6 +22,7 @@ import { FloatNotificationModule } from './dn-framework/ui/modules/floatNotifica
 import { LootWindowModule } from './dn-framework/ui/modules/lootWindowModule'
 import { ChoicePopupModule } from './dn-framework/ui/modules/choicePopupModule'
 import { CraftingPopupModule } from './dn-framework/ui/modules/craftingPopupModule'
+import { FarmPlotPopupModule } from './dn-framework/ui/modules/farmPlotPopupModule'
 
 export function uiSetup(gameMgr: GameManager): void {
   ReactEcsRenderer.setUiRenderer(() => [
@@ -33,6 +35,7 @@ export function uiSetup(gameMgr: GameManager): void {
     LootWindowModule({ popupMgr: gameMgr.popupMgr }),
     ChoicePopupModule({ popupMgr: gameMgr.popupMgr }),
     CraftingPopupModule({ popupMgr: gameMgr.popupMgr, inventory: gameMgr.playerInventory }),
+    FarmPlotPopupModule({ popupMgr: gameMgr.popupMgr }),
 
     // ── Side panels ───────────────────────────────────────────────────────────
     InventoryPanel({ gameMgr }),
@@ -58,7 +61,7 @@ function InventoryPanel({ gameMgr }: { gameMgr: GameManager }) {
       uiBackground={{ color: Color4.create(0.04, 0.06, 0.12, 0.82) }}
     >
       <Label
-        value="— Inventory —"
+        value="-- Inventory --"
         fontSize={13}
         color={Color4.create(0.8, 0.75, 0.5, 1)}
         uiTransform={{ margin: { bottom: 8 } }}
