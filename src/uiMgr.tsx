@@ -2,13 +2,14 @@
  * uiMgr.tsx — React-ECS UI for dcl_popupInteractiveA
  *
  * Layout (all absolute-positioned, layered):
- *   [top-left]    CoordsModule  — X/Y/Z position + Y rotation (key debug tool)
- *   [top-right]   PlayerInfoModule — player name
- *   [mid-right]   InventoryPanel — items collected so far
- *   [lower-right] FloatNotificationModule — drift-up loot notifications
- *   [overlay]     LootWindowModule — "you received" chest modal
- *   [overlay]     ChoicePopupModule — binary item choice
- *   [bottom-center] HintPanel — control hints
+ *   [top-left → 410px]  CoordsModule  — X/Y/Z + Y rotation (avoid DCL left chrome)
+ *   [top-right ← 410px] PlayerInfoModule — player name (avoid DCL right chrome)
+ *   [mid-right ← 16px, top 280px] InventoryPanel — items collected so far
+ *   [lower-right]       FloatNotificationModule — drift-up loot notifications
+ *   [overlay]           LootWindowModule — chest "you received" modal
+ *   [overlay]           ChoicePopupModule — binary item choice
+ *   [overlay]           CraftingPopupModule — recipe list + ingredient check
+ *   [bottom-center]     HintPanel — control hints
  */
 
 import ReactEcs, { Label, UiEntity, ReactEcsRenderer } from '@dcl/sdk/react-ecs'
@@ -19,19 +20,21 @@ import { PlayerInfoModule } from './dn-framework/ui/modules/playerInfoModule'
 import { FloatNotificationModule } from './dn-framework/ui/modules/floatNotificationModule'
 import { LootWindowModule } from './dn-framework/ui/modules/lootWindowModule'
 import { ChoicePopupModule } from './dn-framework/ui/modules/choicePopupModule'
+import { CraftingPopupModule } from './dn-framework/ui/modules/craftingPopupModule'
 
 export function uiSetup(gameMgr: GameManager): void {
   ReactEcsRenderer.setUiRenderer(() => [
-    // ── Debug HUD (always visible) ────────────────────────────────────────────
+    // ── Debug HUD ─────────────────────────────────────────────────────────────
     CoordsModule(gameMgr),
     PlayerInfoModule(gameMgr),
 
-    // ── Popups (absolute overlays — show/hide based on popupType) ────────────
+    // ── Popup overlays ────────────────────────────────────────────────────────
     FloatNotificationModule({ popupMgr: gameMgr.popupMgr }),
     LootWindowModule({ popupMgr: gameMgr.popupMgr }),
     ChoicePopupModule({ popupMgr: gameMgr.popupMgr }),
+    CraftingPopupModule({ popupMgr: gameMgr.popupMgr, inventory: gameMgr.playerInventory }),
 
-    // ── Persistent side panels ────────────────────────────────────────────────
+    // ── Side panels ───────────────────────────────────────────────────────────
     InventoryPanel({ gameMgr }),
     HintPanel(),
   ])
@@ -89,15 +92,13 @@ function HintPanel() {
       uiTransform={{
         positionType: 'absolute',
         position: { bottom: '14px', left: '35%' },
-        width: 360,
-        flexDirection: 'column',
-        alignItems: 'center',
+        width: 400,
         padding: { top: 8, left: 14, right: 14, bottom: 8 },
       }}
       uiBackground={{ color: Color4.create(0, 0, 0, 0.5) }}
     >
       <Label
-        value="[E] Open Chest   [X] Close Popup"
+        value="[E] Interact / Mine / Craft   [X] Close Popup"
         fontSize={13}
         color={Color4.create(0.7, 0.7, 0.75, 1)}
         textAlign="middle-center"
