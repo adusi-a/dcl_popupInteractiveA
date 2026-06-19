@@ -214,6 +214,7 @@ export function CraftingPopupModule({ popupMgr, inventory }: CraftingPopupModule
                 inventory={inventory}
                 canCraft={canCraft}
                 onCraft={() => popupMgr.doCraft()}
+                actionLabel={popupMgr.craftingButtonLabel}
               />
             )}
           </UiEntity>
@@ -230,9 +231,10 @@ interface RecipeDetailProps {
   inventory: PlayerInventory
   canCraft: boolean
   onCraft: () => void
+  actionLabel?: string
 }
 
-function RecipeDetail({ recipe, inventory, canCraft, onCraft }: RecipeDetailProps) {
+function RecipeDetail({ recipe, inventory, canCraft, onCraft, actionLabel }: RecipeDetailProps) {
   return (
     <UiEntity
       uiTransform={{ width: '100%', flexDirection: 'column', alignItems: 'flex-start' }}
@@ -313,7 +315,7 @@ function RecipeDetail({ recipe, inventory, canCraft, onCraft }: RecipeDetailProp
 
       {/* Craft button */}
       <Button
-        value={canCraft ? 'CRAFT' : 'Need resources'}
+        value={canCraft ? (actionLabel ?? 'CRAFT') : 'Need resources'}
         fontSize={18}
         uiTransform={{ width: 200, height: 48 }}
         uiBackground={{ color: canCraft ? BG_CRAFT_ON : BG_CRAFT_OFF }}
