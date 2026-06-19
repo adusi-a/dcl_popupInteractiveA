@@ -62,7 +62,7 @@ export class UiManager {
   setLayout(name: string): void {
     const builder = this.layouts.get(name)
     if (!builder) {
-      console.warn(`UiManager: layout '${name}' not registered`)
+      console.error(`UiManager: layout '${name}' not registered`)
       return
     }
     this.currentLayout = name
