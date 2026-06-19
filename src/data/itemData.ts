@@ -94,6 +94,20 @@ export const ITEM_DATA: Record<string, ItemDef> = {
     description: '+50 Defense. Never bends.',
     color: { r: 0.4, g: 0.6, b: 0.9 },
   },
+
+  // ── Farming ───────────────────────────────────────────────────────────────
+  wheat_seeds: {
+    itemId: 'wheat_seeds',
+    name: 'Wheat Seeds',
+    description: 'Plant in a farm plot. Grows into Wheat in ~30 seconds.',
+    color: { r: 0.75, g: 0.82, b: 0.30 },
+  },
+  wheat: {
+    itemId: 'wheat',
+    name: 'Wheat',
+    description: 'Harvested crop. Sell to the Trader for Gold.',
+    color: { r: 0.92, g: 0.82, b: 0.22 },
+  },
 }
 
 /** Helper: get display name for an itemId (fallback to itemId if not found). */
