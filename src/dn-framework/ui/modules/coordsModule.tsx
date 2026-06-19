@@ -38,7 +38,8 @@ export function CoordsModule(gameMgr?: any, showCheckpoint: boolean = false) {
       uiTransform={{
         width: 300,
         height: showCheckpoint ? 80 : 55,
-        margin: { left: '10px', top: '10px' },
+        positionType: 'absolute',
+        position: { left: '410px', top: '10px' },
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
