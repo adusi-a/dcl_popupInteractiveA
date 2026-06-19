@@ -40,7 +40,7 @@ export function PlayerInfoModule(gameMgr: any) {
         alignItems: 'center',
         justifyContent: 'center',
         positionType: 'absolute',
-        position: { right: '10px', top: '10px' },
+        position: { right: '410px', top: '10px' },
       }}
       uiBackground={{ color: Color4.create(0, 0, 0, 0.6) }}
     >
