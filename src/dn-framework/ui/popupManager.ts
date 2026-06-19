@@ -1,29 +1,21 @@
 /**
  * @file popupManager.ts
  * @module DN DCL Framework / ui
- * @version 0.0002
+ * @version 0.0003
  * @status NEEDS_TEST
  *
  * Popup state manager for DCL SDK7 scenes.
- * Manages all popup types used by chest/toolbox interactions:
- *   - Float notifications (fire-and-forget drift-up messages)
- *   - Loot window (formal "you received" modal with item list)
- *   - Choice popup (binary item choice — pick one, abandon the other)
- *   - Crafting window (recipe list + ingredient check + craft button)
- *
- * PopupManager is a PURE DATA class — no ECS system calls.
- * Wire up the ECS system separately via setupInteractionUiSystem().
+ * Popup types: float | loot | choice | crafting | farm_plot
  *
  * @changelog
  *   0.0001 - Initial. Float, LootWindow, ChoicePopup.
  *   0.0002 - Added Recipe/RecipeIngredient types + CraftingWindow state.
+ *   0.0003 - Added FarmPlotLive + farm_plot popup type. Added craftingButtonLabel.
  */
 
 import { Color4 } from '@dcl/sdk/math'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export type PopupType = 'none' | 'loot' | 'choice' | 'crafting' | 'pause'
+export type PopupType = 'none' | 'loot' | 'choice' | 'crafting' | 'farm_plot' | 'pause'
 
 export interface LootItem {
   itemId: string
@@ -60,38 +52,54 @@ export interface Recipe {
   category: string
   ingredients: RecipeIngredient[]
   output: { itemId: string, name: string, quantity: number }
-  craftTimeMs?: number  // future: hold-to-craft duration
+  craftTimeMs?: number
 }
 
-// ─── PopupManager ─────────────────────────────────────────────────────────────
+/** Live state of a farm plot — passed by reference so popup reads fresh data each frame. */
+export interface FarmPlotLive {
+  plotId: string
+  status: 'empty' | 'growing' | 'ready'
+  seedName: string         // name of what's planted (empty string when empty)
+  outputItemId: string     // itemId of what will be harvested (e.g. 'wheat')
+  outputName: string       // name of what will be harvested
+  outputQuantity: number
+  plantedAt: number | null // Date.now() when planted
+  growthMs: number         // total growth duration
+  availableSeeds: Array<{ itemId: string, name: string, quantity: number }>
+  onPlant: (seedItemId: string, seedName: string) => void
+  onHarvest: () => void
+}
 
 export class PopupManager {
 
-  // ── Active popup state ──────────────────────────────────────────────────────
   popupType: PopupType = 'none'
 
-  // ── Loot window ─────────────────────────────────────────────────────────────
+  // Loot window
   lootTitle: string = 'You received:'
   pendingLootItems: LootItem[] = []
   private onTakeAll: ((items: LootItem[]) => void) | null = null
 
-  // ── Choice popup ─────────────────────────────────────────────────────────────
+  // Choice popup
   choiceItemA: ChoiceItem | null = null
   choiceItemB: ChoiceItem | null = null
   private onChoiceMade: ((chosen: ChoiceItem) => void) | null = null
 
-  // ── Crafting window ───────────────────────────────────────────────────────────
+  // Crafting window
   craftingStationName: string = ''
   craftingRecipes: Recipe[] = []
   craftingActiveCategory: string = ''
   craftingSelectedRecipe: Recipe | null = null
+  craftingButtonLabel: string = 'CRAFT'
   private onCraftItem: ((recipe: Recipe) => void) | null = null
 
-  // ── Float notifications ──────────────────────────────────────────────────────
+  // Farm plot popup
+  farmPlotRef: FarmPlotLive | null = null
+
+  // Float notifications
   floatItems: FloatItem[] = []
   private nextFloatId: number = 0
 
-  // ─── Float Notifications ───────────────────────────────────────────────────
+  // ── Float ─────────────────────────────────────────────────────────────────
 
   showFloat(text: string, color?: Color4, lifeMsOverride?: number): void {
     const now = Date.now()
@@ -112,7 +120,7 @@ export class PopupManager {
     this.floatItems = this.floatItems.filter(f => now - f.startTime < f.lifeMs)
   }
 
-  // ─── Loot Window ──────────────────────────────────────────────────────────
+  // ── Loot Window ────────────────────────────────────────────────────────────
 
   openLootWindow(items: LootItem[], title: string, onTakeAll: (items: LootItem[]) => void): void {
     this.pendingLootItems = items
@@ -126,7 +134,7 @@ export class PopupManager {
     this._clearLoot()
   }
 
-  // ─── Choice Popup ─────────────────────────────────────────────────────────
+  // ── Choice Popup ──────────────────────────────────────────────────────────
 
   openChoicePopup(
     itemA: ChoiceItem,
@@ -144,60 +152,63 @@ export class PopupManager {
     this._clearChoice()
   }
 
-  // ─── Crafting Window ──────────────────────────────────────────────────────
+  // ── Crafting Window ───────────────────────────────────────────────────────
 
-  /**
-   * Open the crafting window for a station.
-   * @param stationName  Display name of the station (e.g. 'Workbench')
-   * @param recipes      Recipes available at this station
-   * @param onCraftItem  Callback invoked when player confirms a craft.
-   *                     Caller handles: ingredient check + consume + inventory add + float + closePopup.
-   */
   openCraftingWindow(
     stationName: string,
     recipes: Recipe[],
-    onCraftItem: (recipe: Recipe) => void
+    onCraftItem: (recipe: Recipe) => void,
+    craftButtonLabel?: string
   ): void {
     this.craftingStationName = stationName
     this.craftingRecipes = recipes
     this.onCraftItem = onCraftItem
-    // Default to first category + first recipe
+    this.craftingButtonLabel = craftButtonLabel ?? 'CRAFT'
     this.craftingActiveCategory = recipes.length > 0 ? recipes[0].category : ''
     this.craftingSelectedRecipe = recipes.length > 0 ? recipes[0] : null
     this.popupType = 'crafting'
   }
 
-  /** Switch the active category tab and select the first recipe in it. */
   setCraftingCategory(category: string): void {
     this.craftingActiveCategory = category
     const first = this.craftingRecipes.find(r => r.category === category)
     this.craftingSelectedRecipe = first ?? null
   }
 
-  /** Highlight a recipe in the list. */
   selectCraftingRecipe(recipe: Recipe): void {
     this.craftingSelectedRecipe = recipe
   }
 
-  /** Execute the currently selected recipe. Calls onCraftItem callback. */
   doCraft(): void {
     if (!this.craftingSelectedRecipe || !this.onCraftItem) return
     this.onCraftItem(this.craftingSelectedRecipe)
   }
 
-  // ─── General ──────────────────────────────────────────────────────────────
+  // ── Farm Plot Popup ───────────────────────────────────────────────────────
+
+  /**
+   * Open the farm plot popup.
+   * Pass a live reference — the popup reads it every render frame for live progress.
+   */
+  openFarmPlotPopup(plot: FarmPlotLive): void {
+    this.farmPlotRef = plot
+    this.popupType = 'farm_plot'
+  }
+
+  // ── General ───────────────────────────────────────────────────────────────
 
   closePopup(): void {
     this._clearLoot()
     this._clearChoice()
     this._clearCrafting()
+    this._clearFarmPlot()
   }
 
   isPopupOpen(): boolean {
     return this.popupType !== 'none' && this.popupType !== 'pause'
   }
 
-  // ─── Private helpers ──────────────────────────────────────────────────────
+  // ── Private ───────────────────────────────────────────────────────────────
 
   private _clearLoot(): void {
     this.pendingLootItems = []
@@ -218,6 +229,12 @@ export class PopupManager {
     this.craftingActiveCategory = ''
     this.craftingSelectedRecipe = null
     this.onCraftItem = null
+    this.craftingButtonLabel = 'CRAFT'
     if (this.popupType === 'crafting') this.popupType = 'none'
+  }
+
+  private _clearFarmPlot(): void {
+    this.farmPlotRef = null
+    if (this.popupType === 'farm_plot') this.popupType = 'none'
   }
 }
