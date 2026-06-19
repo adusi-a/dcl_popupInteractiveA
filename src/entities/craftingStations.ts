@@ -1,12 +1,14 @@
 /**
  * craftingStations.ts — Crafting station entities
  *
- * Two stations at Z=82, flanking the path from resources (Z≈45) to chests (Z=100):
- *   Smelter   (hot orange-red, X=60) — converts ore + coal → iron bars
+ * Two stations at Z=82, flanking the path from resources (Z~45) to chests (Z=100):
+ *   Smelter   (hot orange-red, X=60) — converts ore + coal -> iron bars
  *   Workbench (wood brown,     X=100) — crafts tools + weapons from materials
  *
+ * Plus a Trader at Z~147 (purple, X=100) — buy/sell with TRADE button label.
+ *
  * Each station opens the CraftingPopupModule with its own recipe list.
- * The onCraftItem callback handles: ingredient check → consume → add output → float → close.
+ * The onCraftItem callback handles: ingredient check -> consume -> add output -> float -> close.
  */
 
 import {
@@ -24,7 +26,7 @@ import {
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { GameManager } from '../gameMgr'
 import { Recipe } from '../dn-framework/ui/popupManager'
-import { SMELTER_RECIPES, WORKBENCH_RECIPES } from '../data/recipeData'
+import { SMELTER_RECIPES, WORKBENCH_RECIPES, TRADER_RECIPES } from '../data/recipeData'
 
 export function setupCraftingStations(gameMgr: GameManager): void {
   // Smelter
@@ -50,6 +52,19 @@ export function setupCraftingStations(gameMgr: GameManager): void {
   )
 }
 
+export function setupTrader(gameMgr: GameManager): void {
+  makeStation(
+    gameMgr,
+    Vector3.create(100, 1.5, 147),
+    Vector3.create(2.5, 3.2, 2.0),
+    Color4.create(0.42, 0.18, 0.72, 1),  // purple
+    'Trader',
+    TRADER_RECIPES,
+    'Open Trader',
+    'TRADE'  // custom button label
+  )
+}
+
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 function makeStation(
@@ -59,7 +74,8 @@ function makeStation(
   color: Color4,
   stationName: string,
   recipes: Recipe[],
-  hoverText: string
+  hoverText: string,
+  craftButtonLabel?: string
 ): Entity {
   const entity = engine.addEntity()
   Transform.create(entity, { position, scale })
@@ -86,7 +102,7 @@ function makeStation(
       if (gameMgr.popupMgr.isPopupOpen()) return
       gameMgr.popupMgr.openCraftingWindow(stationName, recipes, (recipe) => {
         craftItem(gameMgr, recipe, stationName)
-      })
+      }, craftButtonLabel)
     }
   )
 
@@ -112,12 +128,12 @@ function craftItem(gameMgr: GameManager, recipe: Recipe, stationName: string): v
 
   // Float notification — longer lifetime so it's readable
   gameMgr.popupMgr.showFloat(
-    `Crafted: ${recipe.output.name} ×${recipe.output.quantity}`,
+    `Crafted: ${recipe.output.name} x${recipe.output.quantity}`,
     Color4.create(0.40, 0.92, 0.48, 1),
     2000
   )
 
-  console.log(`[${stationName}] Crafted ${recipe.output.quantity}× ${recipe.output.name}`)
+  console.log(`[${stationName}] Crafted ${recipe.output.quantity}x ${recipe.output.name}`)
 
   // Auto-close popup
   gameMgr.popupMgr.closePopup()
