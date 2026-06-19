@@ -46,7 +46,7 @@ function InventoryPanel({ gameMgr }: { gameMgr: GameManager }) {
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: { top: '80px', right: '16px' },
+        position: { top: '280px', right: '16px' },
         width: 220,
         flexDirection: 'column',
         alignItems: 'flex-start',
