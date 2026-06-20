@@ -29,16 +29,13 @@ import { PopupManager } from '../popupManager'
 import { QuestManager } from '../../quests/questState'
 import { PlayerInventory } from '../../player/playerInventory'
 import { MarketManager } from '../../economy/marketManager'
+import { NpcComposite } from '../../npcs/npcComposite'
 import {
-  NpcComposite,
   MissionGiverBehavior,
   SellerBehavior,
   BuyerBehavior,
   MessengerBehavior,
 } from '../../npcs/npcBehaviors'
-
-// re-export so we can reference from outside
-export { NpcComposite }
 
 interface NpcPopupModuleProps {
   popupMgr:  PopupManager
@@ -242,11 +239,13 @@ function MissionsTab({ behavior, questMgr, inventory, market, popupMgr, npc }: M
         </UiEntity>
       ))}
 
-      {/* Active quests — show current phase */}
+      {/* Active quests — show current phase + Claim Reward if at last phase */}
       {active.map((def, i) => {
-        const phase      = questMgr.getPhase(def.id)
-        const totalPhase = questMgr.getTotalPhases(def.id)
-        const phaseDesc  = questMgr.getCurrentPhaseDescription(def.id)
+        const phase       = questMgr.getPhase(def.id)
+        const totalPhase  = questMgr.getTotalPhases(def.id)
+        const phaseDesc   = questMgr.getCurrentPhaseDescription(def.id)
+        const isLastPhase = phase >= totalPhase - 1
+
         return (
           <UiEntity
             key={`a${i}`}
@@ -261,10 +260,39 @@ function MissionsTab({ behavior, questMgr, inventory, market, popupMgr, npc }: M
             <Label
               value={`Phase ${phase + 1} / ${totalPhase}: ${phaseDesc}`}
               fontSize={13}
-              color={CLR_PHASE}
-              uiTransform={{ width: '100%', margin: { bottom: 4 } }}
+              color={isLastPhase ? CLR_GREEN : CLR_PHASE}
+              uiTransform={{ width: '100%', margin: { bottom: isLastPhase ? 10 : 4 } }}
               textAlign="middle-left"
             />
+            {isLastPhase && def.reward?.gold && (
+              <Label
+                value={`Reward: +${def.reward.gold}g${def.reward.stats ? ' + XP' : ''}`}
+                fontSize={12}
+                color={CLR_GOLD}
+                uiTransform={{ margin: { bottom: 10 } }}
+              />
+            )}
+            {isLastPhase && (
+              <Button
+                value="Claim Reward"
+                fontSize={15}
+                uiTransform={{ width: 150, height: 36 }}
+                uiBackground={{ color: BG_TURNIN }}
+                onMouseDown={() => {
+                  const reward = behavior.turnInQuest(def.id, questMgr, inventory, market)
+                  if (reward) {
+                    if (reward.gold) {
+                      popupMgr.showFloat(`Quest complete! +${reward.gold}g`, CLR_GOLD, 3000)
+                    }
+                    if (reward.stats) {
+                      for (const [k, v] of Object.entries(reward.stats!)) {
+                        popupMgr.showFloat(`+${v} ${k.replace('_', ' ')}`, CLR_GREEN, 3000)
+                      }
+                    }
+                  }
+                }}
+              />
+            )}
           </UiEntity>
         )
       })}
