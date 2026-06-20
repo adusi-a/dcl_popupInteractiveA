@@ -1,22 +1,23 @@
 /**
  * @file popupManager.ts
  * @module DN DCL Framework / ui
- * @version 0.0004
+ * @version 0.0005
  * @status NEEDS_TEST
  *
  * Popup state manager for DCL SDK7 scenes.
- * Popup types: float | loot | choice | crafting | farm_plot | fishing
+ * Popup types: float | loot | choice | crafting | farm_plot | fishing | notice_board
  *
  * @changelog
  *   0.0001 - Initial. Float, LootWindow, ChoicePopup.
  *   0.0002 - Added Recipe/RecipeIngredient types + CraftingWindow state.
  *   0.0003 - Added FarmPlotLive + farm_plot popup type. Added craftingButtonLabel.
  *   0.0004 - Added FishingCastLive + fishing popup type.
+ *   0.0005 - Added NoticeBoardLive + notice_board popup type (static text display).
  */
 
 import { Color4 } from '@dcl/sdk/math'
 
-export type PopupType = 'none' | 'loot' | 'choice' | 'crafting' | 'farm_plot' | 'pause' | 'fishing'
+export type PopupType = 'none' | 'loot' | 'choice' | 'crafting' | 'farm_plot' | 'pause' | 'fishing' | 'notice_board'
 
 export interface LootItem {
   itemId: string
@@ -71,6 +72,17 @@ export interface FishingCastLive {
   onCollect: () => void    // add fish to inventory, close popup
 }
 
+/**
+ * Notice board data — static text shown to the player, no callbacks.
+ * Use for signs, map notes, lore, brief NPC messages.
+ * NOT a mission board (no quest lists or state changes).
+ */
+export interface NoticeBoardLive {
+  title: string
+  bodyText: string
+  closeLabel?: string   // defaults to 'Close'
+}
+
 /** Live state of a farm plot — passed by reference so popup reads fresh data each frame. */
 export interface FarmPlotLive {
   plotId: string
@@ -113,6 +125,9 @@ export class PopupManager {
 
   // Fishing popup
   fishingRef: FishingCastLive | null = null
+
+  // Notice board
+  noticeBoardRef: NoticeBoardLive | null = null
 
   // Float notifications
   floatItems: FloatItem[] = []
@@ -231,6 +246,23 @@ export class PopupManager {
     if (this.popupType === 'fishing') this.popupType = 'none'
   }
 
+  // ── Notice Board ──────────────────────────────────────────────────────────
+
+  /**
+   * Open the notice board popup with static text.
+   * No callbacks — player just reads and closes.
+   * Use for signs, map notes, lore, brief NPC messages.
+   */
+  openNoticeBoard(notice: NoticeBoardLive): void {
+    this.noticeBoardRef = notice
+    this.popupType = 'notice_board'
+  }
+
+  closeNoticeBoard(): void {
+    this.noticeBoardRef = null
+    if (this.popupType === 'notice_board') this.popupType = 'none'
+  }
+
   // ── General ───────────────────────────────────────────────────────────────
 
   closePopup(): void {
@@ -239,6 +271,7 @@ export class PopupManager {
     this._clearCrafting()
     this._clearFarmPlot()
     this.closeFishingPopup()
+    this.closeNoticeBoard()
   }
 
   isPopupOpen(): boolean {
