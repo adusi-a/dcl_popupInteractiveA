@@ -1,11 +1,11 @@
 /**
  * @file popupManager.ts
  * @module DN DCL Framework / ui
- * @version 0.0005
+ * @version 0.0006
  * @status NEEDS_TEST
  *
  * Popup state manager for DCL SDK7 scenes.
- * Popup types: float | loot | choice | crafting | farm_plot | fishing | notice_board
+ * Popup types: float | loot | choice | crafting | farm_plot | fishing | notice_board | npc
  *
  * @changelog
  *   0.0001 - Initial. Float, LootWindow, ChoicePopup.
@@ -13,11 +13,12 @@
  *   0.0003 - Added FarmPlotLive + farm_plot popup type. Added craftingButtonLabel.
  *   0.0004 - Added FishingCastLive + fishing popup type.
  *   0.0005 - Added NoticeBoardLive + notice_board popup type (static text display).
+ *   0.0006 - Added NpcComposite reference + npc popup type (behavior-driven adaptive UI).
  */
 
 import { Color4 } from '@dcl/sdk/math'
 
-export type PopupType = 'none' | 'loot' | 'choice' | 'crafting' | 'farm_plot' | 'pause' | 'fishing' | 'notice_board'
+export type PopupType = 'none' | 'loot' | 'choice' | 'crafting' | 'farm_plot' | 'pause' | 'fishing' | 'notice_board' | 'npc'
 
 export interface LootItem {
   itemId: string
@@ -128,6 +129,10 @@ export class PopupManager {
 
   // Notice board
   noticeBoardRef: NoticeBoardLive | null = null
+
+  // NPC behavior-driven popup
+  // Typed as `any` here to avoid circular imports — NpcPopupModule imports NpcComposite directly.
+  activeNpc: any | null = null
 
   // Float notifications
   floatItems: FloatItem[] = []
@@ -263,6 +268,19 @@ export class PopupManager {
     if (this.popupType === 'notice_board') this.popupType = 'none'
   }
 
+  // ── NPC Popup (behavior-driven) ───────────────────────────────────────────
+
+  /** Open the adaptive NPC popup for an NpcComposite. */
+  openNpcPopup(npc: any): void {
+    this.activeNpc = npc
+    this.popupType = 'npc'
+  }
+
+  closeNpcPopup(): void {
+    this.activeNpc = null
+    if (this.popupType === 'npc') this.popupType = 'none'
+  }
+
   // ── General ───────────────────────────────────────────────────────────────
 
   closePopup(): void {
@@ -272,6 +290,7 @@ export class PopupManager {
     this._clearFarmPlot()
     this.closeFishingPopup()
     this.closeNoticeBoard()
+    this.closeNpcPopup()
   }
 
   isPopupOpen(): boolean {
