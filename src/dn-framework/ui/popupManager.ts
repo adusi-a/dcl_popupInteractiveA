@@ -1,11 +1,11 @@
 /**
  * @file popupManager.ts
  * @module DN DCL Framework / ui
- * @version 0.0006
+ * @version 0.0007
  * @status NEEDS_TEST
  *
  * Popup state manager for DCL SDK7 scenes.
- * Popup types: float | loot | choice | crafting | farm_plot | fishing | notice_board | npc
+ * Popup types: float | loot | choice | crafting | farm_plot | fishing | notice_board | interactive
  *
  * @changelog
  *   0.0001 - Initial. Float, LootWindow, ChoicePopup.
@@ -14,11 +14,13 @@
  *   0.0004 - Added FishingCastLive + fishing popup type.
  *   0.0005 - Added NoticeBoardLive + notice_board popup type (static text display).
  *   0.0006 - Added NpcComposite reference + npc popup type (behavior-driven adaptive UI).
+ *   0.0007 - Renamed npc→interactive popup type; openNpcPopup→openInteractivePopup.
+ *            NpcComposite renamed to InteractiveComposite across the system.
  */
 
 import { Color4 } from '@dcl/sdk/math'
 
-export type PopupType = 'none' | 'loot' | 'choice' | 'crafting' | 'farm_plot' | 'pause' | 'fishing' | 'notice_board' | 'npc'
+export type PopupType = 'none' | 'loot' | 'choice' | 'crafting' | 'farm_plot' | 'pause' | 'fishing' | 'notice_board' | 'interactive'
 
 export interface LootItem {
   itemId: string
@@ -130,9 +132,8 @@ export class PopupManager {
   // Notice board
   noticeBoardRef: NoticeBoardLive | null = null
 
-  // NPC behavior-driven popup
-  // Typed as `any` here to avoid circular imports — NpcPopupModule imports NpcComposite directly.
-  activeNpc: any | null = null
+  // Interactive entity popup (behavior-driven, any InteractiveComposite)
+  activeEntity: any | null = null
 
   // Float notifications
   floatItems: FloatItem[] = []
@@ -268,18 +269,24 @@ export class PopupManager {
     if (this.popupType === 'notice_board') this.popupType = 'none'
   }
 
-  // ── NPC Popup (behavior-driven) ───────────────────────────────────────────
+  // ── Interactive Entity Popup (behavior-driven) ────────────────────────────
 
-  /** Open the adaptive NPC popup for an NpcComposite. */
-  openNpcPopup(npc: any): void {
-    this.activeNpc = npc
-    this.popupType = 'npc'
+  /** Open the adaptive popup for any InteractiveComposite entity. */
+  openInteractivePopup(entity: any): void {
+    this.activeEntity = entity
+    this.popupType    = 'interactive'
   }
 
-  closeNpcPopup(): void {
-    this.activeNpc = null
-    if (this.popupType === 'npc') this.popupType = 'none'
+  closeInteractivePopup(): void {
+    this.activeEntity = null
+    if (this.popupType === 'interactive') this.popupType = 'none'
   }
+
+  // Backward-compat aliases
+  openNpcPopup(npc: any): void   { this.openInteractivePopup(npc)  }
+  closeNpcPopup(): void           { this.closeInteractivePopup()    }
+  get activeNpc(): any            { return this.activeEntity        }
+  set activeNpc(v: any)           { this.activeEntity = v           }
 
   // ── General ───────────────────────────────────────────────────────────────
 
@@ -290,7 +297,7 @@ export class PopupManager {
     this._clearFarmPlot()
     this.closeFishingPopup()
     this.closeNoticeBoard()
-    this.closeNpcPopup()
+    this.closeInteractivePopup()
   }
 
   isPopupOpen(): boolean {
