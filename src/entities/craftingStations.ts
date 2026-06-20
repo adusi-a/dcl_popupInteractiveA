@@ -154,6 +154,15 @@ function craftItem(gameMgr: GameManager, recipe: Recipe, stationName: string): v
 
   console.log(`[${stationName}] Crafted ${recipe.output.quantity}x ${recipe.output.name}`)
 
+  // Quest: fishing_basic phase 2 → 3 when a fish is sold at the Fishmonger
+  const fishSellIds = ['sell_perch', 'sell_bass', 'sell_trout']
+  if (fishSellIds.includes(recipe.id) && gameMgr.questMgr) {
+    if (gameMgr.questMgr.isActive('fishing_basic') && gameMgr.questMgr.getPhase('fishing_basic') === 1) {
+      gameMgr.questMgr.advancePhase('fishing_basic')
+      gameMgr.popupMgr.showFloat('Quest update: Return to the Mission Board!', Color4.create(1, 0.85, 0.2, 1), 3500)
+    }
+  }
+
   // Auto-close popup
   gameMgr.popupMgr.closePopup()
 }
