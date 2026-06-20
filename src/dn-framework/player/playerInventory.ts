@@ -1,86 +1,174 @@
 /**
  * @file playerInventory.ts
  * @module DN DCL Framework / player
- * @version 0.0001
+ * @version 0.0002
  * @status NEEDS_TEST
  *
- * Simple client-side player inventory for DCL SDK7 scenes.
- * Supports adding, removing, and querying items by itemId.
- * No server sync — local state only. Extend for server-backed inventory later.
+ * Player inventory, currency, and stats for DCL SDK7 scenes.
  *
- * Usage:
- *   const inv = new PlayerInventory()
- *   inv.addItem('gold', 'Gold', 50)
- *   inv.addItem('gold', 'Gold', 25)    // stacks → quantity 75
- *   inv.getCount('gold')               // 75
- *   inv.removeItem('gold', 10)         // true → quantity 65
- *   inv.getAllItems()                  // [{ itemId, name, quantity }]
+ * THREE BUCKETS:
+ *   items     — stackable collectibles (ore, wood, fish, potions...)
+ *   currency  — spendable numeric values (gold, silver, gems...)
+ *   stats     — tracked non-spendable values (xp, fishing_xp, mp, hp...)
+ *
+ * COMPATIBILITY BRIDGE (v0.0002):
+ *   Currencies registered via registerCurrency() are transparently accessible
+ *   through the existing item API. The Trader/Fishmonger CraftingPopup keeps
+ *   working with zero changes:
+ *     inv.getCount('gold')         → returns currency balance
+ *     inv.addItem('gold', ...)     → routes to addCurrency()
+ *     inv.removeItem('gold', qty)  → routes to spendCurrency()
+ *     inv.hasEnough('gold', qty)   → checks currency balance
+ *   'gold' is pre-registered. Add others via registerCurrency().
  *
  * @changelog
- *   0.0001 - Initial. Built for dnWorld_chestTestA popup sprint.
+ *   0.0001 - Initial item map (addItem/removeItem/getCount/hasEnough).
+ *   0.0002 - Added currency map (gold pre-registered, compatibility bridge),
+ *            stats map (xp/mp/hp etc.), onChange listener registration.
  */
 
 export interface InventoryItem {
   itemId: string
   name: string
   quantity: number
-  icon?: string  // optional texture path
+  icon?: string
 }
+
+type ChangeListener = () => void
 
 export class PlayerInventory {
 
-  private items: Map<string, InventoryItem> = new Map()
+  private _items:       Map<string, InventoryItem> = new Map()
+  private _currency:    Record<string, number>     = {}
+  private _stats:       Record<string, number>     = {}
+  private _currencyIds: Set<string>                = new Set()
+  private _listeners:   ChangeListener[]           = []
 
-  /**
-   * Add items to the inventory. Stacks if the itemId already exists.
-   * @param itemId   Unique item identifier (e.g. 'gold', 'iron_sword')
-   * @param name     Display name (used when stacking — keeps first name given)
-   * @param quantity Amount to add
-   * @param icon     Optional texture path for UI display
-   */
-  addItem(itemId: string, name: string, quantity: number, icon?: string): void {
-    const existing = this.items.get(itemId)
-    if (existing) {
-      existing.quantity += quantity
-    } else {
-      this.items.set(itemId, { itemId, name, quantity, icon })
-    }
+  constructor() {
+    // Pre-register gold so the compatibility bridge is active from the start
+    this.registerCurrency('gold', 0)
   }
 
+  // ── Currency Registration ──────────────────────────────────────────────────
+
   /**
-   * Remove items from inventory.
-   * @returns true if the removal succeeded (had enough), false otherwise.
+   * Register a key as a currency. Once registered, item-API calls with this
+   * key (getCount/addItem/removeItem/hasEnough) transparently route to the
+   * currency map. Call at GameManager init for any currency the game uses.
    */
-  removeItem(itemId: string, quantity: number): boolean {
-    const item = this.items.get(itemId)
-    if (!item || item.quantity < quantity) return false
-    item.quantity -= quantity
-    if (item.quantity === 0) this.items.delete(itemId)
+  registerCurrency(key: string, initialAmount: number = 0): void {
+    this._currencyIds.add(key)
+    if (!(key in this._currency)) this._currency[key] = initialAmount
+  }
+
+  // ── Currency API ──────────────────────────────────────────────────────────
+
+  addCurrency(amount: number, key: string = 'gold'): void {
+    if (!this._currencyIds.has(key)) this.registerCurrency(key)
+    this._currency[key] = (this._currency[key] ?? 0) + Math.max(0, amount)
+    this._notify()
+  }
+
+  /** @returns true if deducted, false if insufficient */
+  spendCurrency(amount: number, key: string = 'gold'): boolean {
+    if ((this._currency[key] ?? 0) < amount) return false
+    this._currency[key] -= amount
+    this._notify()
     return true
   }
 
-  /** Get the quantity of a specific item (0 if not present). */
+  getCurrency(key: string = 'gold'): number {
+    return this._currency[key] ?? 0
+  }
+
+  canAfford(amount: number, key: string = 'gold'): boolean {
+    return (this._currency[key] ?? 0) >= amount
+  }
+
+  /** All registered currencies as { key: amount } for HUD display. */
+  getAllCurrencies(): Record<string, number> {
+    return { ...this._currency }
+  }
+
+  // ── Stats API ─────────────────────────────────────────────────────────────
+
+  /** Add to a stat. Creates at 0 if not present. */
+  addStat(key: string, amount: number): void {
+    this._stats[key] = (this._stats[key] ?? 0) + amount
+    this._notify()
+  }
+
+  setStat(key: string, value: number): void {
+    this._stats[key] = value
+    this._notify()
+  }
+
+  getStat(key: string): number {
+    return this._stats[key] ?? 0
+  }
+
+  /** All stats as { key: value } for HUD display. */
+  getAllStats(): Record<string, number> {
+    return { ...this._stats }
+  }
+
+  // ── Item API (compatibility bridge intercepts currency keys) ───────────────
+
+  addItem(itemId: string, name: string, quantity: number, icon?: string): void {
+    if (this._currencyIds.has(itemId)) { this.addCurrency(quantity, itemId); return }
+    const existing = this._items.get(itemId)
+    if (existing) {
+      existing.quantity += quantity
+    } else {
+      this._items.set(itemId, { itemId, name, quantity, icon })
+    }
+    this._notify()
+  }
+
+  removeItem(itemId: string, quantity: number): boolean {
+    if (this._currencyIds.has(itemId)) return this.spendCurrency(quantity, itemId)
+    const item = this._items.get(itemId)
+    if (!item || item.quantity < quantity) return false
+    item.quantity -= quantity
+    if (item.quantity === 0) this._items.delete(itemId)
+    this._notify()
+    return true
+  }
+
   getCount(itemId: string): number {
-    return this.items.get(itemId)?.quantity ?? 0
+    if (this._currencyIds.has(itemId)) return this._currency[itemId] ?? 0
+    return this._items.get(itemId)?.quantity ?? 0
   }
 
-  /** Get the full InventoryItem record, or undefined if not in inventory. */
   getItem(itemId: string): InventoryItem | undefined {
-    return this.items.get(itemId)
+    return this._items.get(itemId)
   }
 
-  /** Get all items as an array (sorted by itemId for consistent display). */
-  getAllItems(): InventoryItem[] {
-    return Array.from(this.items.values()).sort((a, b) => a.itemId.localeCompare(b.itemId))
-  }
-
-  /** Returns true if the player has at least `quantity` of `itemId`. */
   hasEnough(itemId: string, quantity: number): boolean {
     return this.getCount(itemId) >= quantity
   }
 
-  /** Clear all items (reset inventory). */
+  /** All non-currency items, sorted by itemId. */
+  getAllItems(): InventoryItem[] {
+    return Array.from(this._items.values()).sort((a, b) => a.itemId.localeCompare(b.itemId))
+  }
+
   clear(): void {
-    this.items.clear()
+    this._items.clear()
+    this._notify()
+  }
+
+  // ── Change Listeners ──────────────────────────────────────────────────────
+
+  onChange(fn: ChangeListener): () => void {
+    this._listeners.push(fn)
+    return () => {
+      const i = this._listeners.indexOf(fn)
+      if (i >= 0) this._listeners.splice(i, 1)
+    }
+  }
+
+  private _notify(): void {
+    for (const fn of this._listeners) fn()
   }
 }
