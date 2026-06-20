@@ -19,7 +19,7 @@
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { QuestDefinition } from '../dn-framework/quests/questState'
 import { MissionGiverBehavior } from '../dn-framework/npcs/npcBehaviors'
-import { createNpcEntity } from '../dn-framework/npcs/npcComposite'
+import { createInteractiveEntity } from '../dn-framework/npcs/npcComposite'
 
 // ─── Quest Definition ─────────────────────────────────────────────────────────
 
@@ -50,13 +50,13 @@ export function setupFishingMissionBoard(gameMgr: any): void {
 
   const missionGiver = new MissionGiverBehavior([FISHING_BASIC_QUEST])
 
-  createNpcEntity({
+  createInteractiveEntity({
     pos:       Vector3.create(28, 1.0, 145),
     scale:     Vector3.create(2.0, 1.6, 0.2),
     color:     Color4.create(0.28, 0.20, 0.08, 1),  // dark wood board
     label:     'Fishing\nMission Board',
     hoverText: 'Read Board [E]',
-    npc: {
+    entity: {
       displayName: 'Fishing Mission Board',
       missionGiver,
     },
