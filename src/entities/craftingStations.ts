@@ -26,7 +26,7 @@ import {
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { GameManager } from '../gameMgr'
 import { Recipe } from '../dn-framework/ui/popupManager'
-import { SMELTER_RECIPES, WORKBENCH_RECIPES, TRADER_RECIPES } from '../data/recipeData'
+import { SMELTER_RECIPES, WORKBENCH_RECIPES, TRADER_RECIPES, FISHMONGER_RECIPES } from '../data/recipeData'
 
 export function setupCraftingStations(gameMgr: GameManager): void {
   // Smelter
@@ -62,6 +62,25 @@ export function setupTrader(gameMgr: GameManager): void {
     TRADER_RECIPES,
     'Open Trader',
     'TRADE'  // custom button label
+  )
+}
+
+/**
+ * Fishing Shop (Fishmonger) — west side of scene, X=28, Z=120.
+ * Teal-blue NPC box. Buy rods/bait | Sell fish.
+ * Uses CraftingPopup with "TRADE" label (same pattern as Trader).
+ * Worms are gathered free from the soil patches near the ore vein — not sold here.
+ */
+export function setupFishingShop(gameMgr: GameManager): void {
+  makeStation(
+    gameMgr,
+    Vector3.create(28, 1.5, 120),
+    Vector3.create(2.2, 3.0, 2.2),
+    Color4.create(0.16, 0.52, 0.70, 1),  // teal-blue fishmonger
+    'Fishmonger',
+    FISHMONGER_RECIPES,
+    'Open Fishmonger',
+    'TRADE'
   )
 }
 
