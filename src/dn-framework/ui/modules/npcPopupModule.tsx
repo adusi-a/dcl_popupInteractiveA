@@ -195,7 +195,7 @@ function MissionsTab({ b, questMgr, inventory, market, popupMgr }: {
   return (
     <UiEntity uiTransform={{ width: '100%', flexDirection: 'column' }}>
       {completable.map((def, i) => (
-        <UiEntity key={`c${i}`} uiTransform={{ width: '100%', flexDirection: 'column', padding: { all: 10 }, margin: { bottom: 8 } }} uiBackground={{ color: BG_ROW }}>
+        <UiEntity key={`c${i}`} uiTransform={{ width: '100%', flexDirection: 'column', padding: { top: 10, bottom: 10, left: 10, right: 10 }, margin: { bottom: 8 } }} uiBackground={{ color: BG_ROW }}>
           <Label value={`✓  ${def.title}`} fontSize={16} color={CLR_GREEN} uiTransform={{ margin: { bottom: 6 } }} />
           <Label value="Quest complete! Claim your reward." fontSize={13} color={CLR_MUTED} uiTransform={{ margin: { bottom: 10 } }} />
           {def.reward?.gold && <Label value={`Reward: +${def.reward.gold}g${def.reward.stats ? ' + XP' : ''}`} fontSize={13} color={CLR_GOLD} uiTransform={{ margin: { bottom: 10 } }} />}
@@ -210,7 +210,7 @@ function MissionsTab({ b, questMgr, inventory, market, popupMgr }: {
         const desc  = questMgr.getCurrentPhaseDescription(def.id)
         const isLast = phase >= total - 1
         return (
-          <UiEntity key={`a${i}`} uiTransform={{ width: '100%', flexDirection: 'column', padding: { all: 10 }, margin: { bottom: 8 } }} uiBackground={{ color: BG_ROW }}>
+          <UiEntity key={`a${i}`} uiTransform={{ width: '100%', flexDirection: 'column', padding: { top: 10, bottom: 10, left: 10, right: 10 }, margin: { bottom: 8 } }} uiBackground={{ color: BG_ROW }}>
             <Label value={`★  ${def.title}`} fontSize={16} color={CLR_HEADER} uiTransform={{ margin: { bottom: 6 } }} />
             <Label value={`Phase ${phase + 1} / ${total}: ${desc}`} fontSize={13} color={isLast ? CLR_GREEN : CLR_PHASE} uiTransform={{ width: '100%', margin: { bottom: isLast ? 10 : 4 } }} textAlign="middle-left" />
             {isLast && def.reward?.gold && <Label value={`Reward: +${def.reward.gold}g${def.reward.stats ? ' + XP' : ''}`} fontSize={12} color={CLR_GOLD} uiTransform={{ margin: { bottom: 10 } }} />}
@@ -229,7 +229,7 @@ function MissionsTab({ b, questMgr, inventory, market, popupMgr }: {
       })}
 
       {available.map((def, i) => (
-        <UiEntity key={`v${i}`} uiTransform={{ width: '100%', flexDirection: 'column', padding: { all: 10 }, margin: { bottom: 8 } }} uiBackground={{ color: BG_ROW }}>
+        <UiEntity key={`v${i}`} uiTransform={{ width: '100%', flexDirection: 'column', padding: { top: 10, bottom: 10, left: 10, right: 10 }, margin: { bottom: 8 } }} uiBackground={{ color: BG_ROW }}>
           <Label value={`○  ${def.title}`} fontSize={16} color={CLR_WHITE} uiTransform={{ margin: { bottom: 6 } }} />
           <Label value={def.description} fontSize={13} color={CLR_MUTED} uiTransform={{ width: '100%', margin: { bottom: 10 } }} textAlign="middle-left" />
           {def.reward?.gold && <Label value={`Reward: ${def.reward.gold}g${def.reward.stats ? ' + XP' : ''}`} fontSize={12} color={CLR_GOLD} uiTransform={{ margin: { bottom: 8 } }} />}
@@ -305,7 +305,7 @@ function CraftTab({ b, inventory, popupMgr }: { b: CrafterBehavior; inventory: P
               const met  = have >= ing.quantity
               return (
                 <UiEntity key={i.toString()}
-                  uiTransform={{ width: 120, height: 72, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', margin: { right: 8, bottom: 4 }, padding: { all: 6 } }}
+                  uiTransform={{ width: 120, height: 72, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', margin: { right: 8, bottom: 4 }, padding: { top: 6, bottom: 6, left: 6, right: 6 } }}
                   uiBackground={{ color: met ? BG_ING_OK : BG_ING_MISS }}>
                   <Label value={ing.name}            fontSize={12} color={CLR_WHITE} textAlign="middle-center" />
                   <Label value={`Need ×${ing.quantity}`} fontSize={11} color={CLR_MUTED} uiTransform={{ margin: { top: 3 } }} textAlign="middle-center" />
@@ -367,7 +367,7 @@ function RefineTab({ b, inventory, popupMgr }: { b: RefinerBehavior; inventory: 
 
       {/* Selected formula detail */}
       {selected && (
-        <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', margin: { top: 10 }, padding: { all: 10 } }} uiBackground={{ color: BG_ROW }}>
+        <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', margin: { top: 10 }, padding: { top: 10, bottom: 10, left: 10, right: 10 } }} uiBackground={{ color: BG_ROW }}>
           <Label value={selected.name} fontSize={15} color={CLR_HEADER} uiTransform={{ margin: { bottom: 10 } }} />
           {[
             { label: 'Input', itemId: selected.inputItemId, name: selected.inputName, qty: selected.inputQuantity },
