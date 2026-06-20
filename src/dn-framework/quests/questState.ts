@@ -83,7 +83,7 @@ export class QuestManager {
    * Register a quest from a full QuestDefinition.
    * No-op if quest id already registered.
    */
-  register(def: QuestDefinition, initialStatus: QuestStatus = 'locked'): void
+  register(def: QuestDefinition, initialStatus?: QuestStatus): void
   /**
    * Convenience overload: register a simple single-phase quest.
    * @deprecated prefer register(QuestDefinition) for new code
@@ -120,7 +120,7 @@ export class QuestManager {
 
   setStatus(id: string, status: QuestStatus): void {
     const q = this._quests.get(id)
-    if (!q) { console.warn(`[QuestManager] Unknown quest: ${id}`); return }
+    if (!q) { console.error(`[QuestManager] Unknown quest: ${id}`); return }
     q.status = status
     this._fire(q)
   }
