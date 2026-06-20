@@ -1,21 +1,22 @@
 /**
  * @file popupManager.ts
  * @module DN DCL Framework / ui
- * @version 0.0003
+ * @version 0.0004
  * @status NEEDS_TEST
  *
  * Popup state manager for DCL SDK7 scenes.
- * Popup types: float | loot | choice | crafting | farm_plot
+ * Popup types: float | loot | choice | crafting | farm_plot | fishing
  *
  * @changelog
  *   0.0001 - Initial. Float, LootWindow, ChoicePopup.
  *   0.0002 - Added Recipe/RecipeIngredient types + CraftingWindow state.
  *   0.0003 - Added FarmPlotLive + farm_plot popup type. Added craftingButtonLabel.
+ *   0.0004 - Added FishingCastLive + fishing popup type.
  */
 
 import { Color4 } from '@dcl/sdk/math'
 
-export type PopupType = 'none' | 'loot' | 'choice' | 'crafting' | 'farm_plot' | 'pause'
+export type PopupType = 'none' | 'loot' | 'choice' | 'crafting' | 'farm_plot' | 'pause' | 'fishing'
 
 export interface LootItem {
   itemId: string
@@ -53,6 +54,21 @@ export interface Recipe {
   ingredients: RecipeIngredient[]
   output: { itemId: string, name: string, quantity: number }
   craftTimeMs?: number
+}
+
+/**
+ * Live state of a fishing cast — passed by reference so popup reads fresh data each frame.
+ * The fishing mechanic system updates `phase` from 'casting' → 'caught' when the timer expires.
+ */
+export interface FishingCastLive {
+  poleLabel: string        // e.g. "Basic Rod"
+  baitLabel: string        // e.g. "Worm"
+  castStartTime: number    // Date.now() when cast began
+  castDurationMs: number   // total wait in ms
+  phase: 'casting' | 'caught'
+  catchLabel?: string      // "Bass (2.2lb)" — set when phase transitions to caught
+  catchGoldValue?: number  // approx gold when sold — set when phase transitions
+  onCollect: () => void    // add fish to inventory, close popup
 }
 
 /** Live state of a farm plot — passed by reference so popup reads fresh data each frame. */
@@ -94,6 +110,9 @@ export class PopupManager {
 
   // Farm plot popup
   farmPlotRef: FarmPlotLive | null = null
+
+  // Fishing popup
+  fishingRef: FishingCastLive | null = null
 
   // Float notifications
   floatItems: FloatItem[] = []
@@ -195,6 +214,23 @@ export class PopupManager {
     this.popupType = 'farm_plot'
   }
 
+  // ── Fishing Popup ─────────────────────────────────────────────────────────
+
+  /**
+   * Open the fishing cast popup.
+   * Pass a live FishingCastLive reference — popup reads it every frame.
+   * The fishing mechanic system transitions phase from 'casting' to 'caught'.
+   */
+  openFishingPopup(castLive: FishingCastLive): void {
+    this.fishingRef = castLive
+    this.popupType = 'fishing'
+  }
+
+  closeFishingPopup(): void {
+    this.fishingRef = null
+    if (this.popupType === 'fishing') this.popupType = 'none'
+  }
+
   // ── General ───────────────────────────────────────────────────────────────
 
   closePopup(): void {
@@ -202,6 +238,7 @@ export class PopupManager {
     this._clearChoice()
     this._clearCrafting()
     this._clearFarmPlot()
+    this.closeFishingPopup()
   }
 
   isPopupOpen(): boolean {
