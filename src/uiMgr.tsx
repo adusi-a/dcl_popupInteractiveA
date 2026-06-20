@@ -24,6 +24,7 @@ import { ChoicePopupModule } from './dn-framework/ui/modules/choicePopupModule'
 import { CraftingPopupModule } from './dn-framework/ui/modules/craftingPopupModule'
 import { FarmPlotPopupModule } from './dn-framework/ui/modules/farmPlotPopupModule'
 import { FishingPopupModule } from './dn-framework/ui/modules/fishingPopupModule'
+import { NoticeBoardModule } from './dn-framework/ui/modules/noticeBoardModule'
 
 export function uiSetup(gameMgr: GameManager): void {
   ReactEcsRenderer.setUiRenderer(() => [
@@ -38,6 +39,7 @@ export function uiSetup(gameMgr: GameManager): void {
     CraftingPopupModule({ popupMgr: gameMgr.popupMgr, inventory: gameMgr.playerInventory }),
     FarmPlotPopupModule({ popupMgr: gameMgr.popupMgr }),
     FishingPopupModule({ popupMgr: gameMgr.popupMgr }),
+    NoticeBoardModule({ popupMgr: gameMgr.popupMgr }),
 
     // ── Side panels ───────────────────────────────────────────────────────────
     InventoryPanel({ gameMgr }),
