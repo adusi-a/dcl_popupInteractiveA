@@ -85,3 +85,63 @@ export const TRADER_RECIPES: Recipe[] = [
     output: { itemId: 'gold', name: 'Gold', quantity: 10 },
   },
 ]
+
+// ── Fishmonger ─────────────────────────────────────────────────────────────────
+// Buy fishing gear with Gold / Sell fish for Gold.
+// Uses the CraftingPopup with label "TRADE" (same pattern as Trader).
+// Worms are gathered free from soil patches — not sold here.
+
+export const FISHMONGER_RECIPES: Recipe[] = [
+  // ── Buy: Rods ──────────────────────────────────────────────────────────────
+  {
+    id: 'buy_rod_t1',
+    name: 'Basic Rod',
+    category: 'Buy',
+    ingredients: [{ itemId: 'gold', name: 'Gold', quantity: 20 }],
+    output: { itemId: 'rod_t1', name: 'Basic Rod', quantity: 1 },
+  },
+  {
+    id: 'buy_rod_t2',
+    name: 'Good Rod',
+    category: 'Buy',
+    ingredients: [{ itemId: 'gold', name: 'Gold', quantity: 60 }],
+    output: { itemId: 'rod_t2', name: 'Good Rod', quantity: 1 },
+  },
+  {
+    id: 'buy_rod_t3',
+    name: "Master's Rod",
+    category: 'Buy',
+    ingredients: [{ itemId: 'gold', name: 'Gold', quantity: 150 }],
+    output: { itemId: 'rod_t3', name: "Master's Rod", quantity: 1 },
+  },
+  // ── Buy: Bait ──────────────────────────────────────────────────────────────
+  {
+    id: 'buy_bait',
+    name: 'Basic Bait x3',
+    category: 'Buy',
+    ingredients: [{ itemId: 'gold', name: 'Gold', quantity: 12 }],
+    output: { itemId: 'bait_basic', name: 'Basic Bait', quantity: 3 },
+  },
+  // ── Sell: Fish ─────────────────────────────────────────────────────────────
+  {
+    id: 'sell_perch',
+    name: 'Sell Perch',
+    category: 'Sell',
+    ingredients: [{ itemId: 'perch', name: 'Perch', quantity: 1 }],
+    output: { itemId: 'gold', name: 'Gold', quantity: 3 },
+  },
+  {
+    id: 'sell_bass',
+    name: 'Sell Bass',
+    category: 'Sell',
+    ingredients: [{ itemId: 'bass', name: 'Bass', quantity: 1 }],
+    output: { itemId: 'gold', name: 'Gold', quantity: 8 },
+  },
+  {
+    id: 'sell_trout',
+    name: 'Sell Trout',
+    category: 'Sell',
+    ingredients: [{ itemId: 'trout', name: 'Trout', quantity: 1 }],
+    output: { itemId: 'gold', name: 'Gold', quantity: 6 },
+  },
+]
