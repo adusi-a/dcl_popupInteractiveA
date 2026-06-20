@@ -62,8 +62,10 @@ export class MissionGiverBehavior {
   }
 
   /**
-   * Turn in a completed quest: apply rewards, mark turned_in.
-   * @returns the reward that was applied (for float notifications)
+   * Turn in a quest. Accepts:
+   *   - status === 'complete' (normal path — already auto-completed)
+   *   - status === 'active' AND at the last phase (player returns to board to claim)
+   * @returns the reward that was applied (for float notifications), or null if not eligible
    */
   turnInQuest(
     questId: string,
@@ -71,7 +73,12 @@ export class MissionGiverBehavior {
     inventory: PlayerInventory,
     market: MarketManager
   ): QuestReward | null {
-    if (questMgr.getStatus(questId) !== 'complete') return null
+    const q = questMgr.getQuest(questId)
+    if (!q) return null
+
+    const isLastPhase = q.currentPhase >= q.definition.phases.length - 1
+    const canTurnIn   = q.status === 'complete' || (q.status === 'active' && isLastPhase)
+    if (!canTurnIn) return null
     const def = this.questDefinitions.find(d => d.id === questId)
     if (!def?.reward) {
       questMgr.setStatus(questId, 'turned_in')
