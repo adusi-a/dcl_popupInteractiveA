@@ -1,23 +1,20 @@
 /**
  * @file npcComposite.ts
  * @module DN DCL Framework / npcs
- * @version 0.0001
+ * @version 0.0002
  * @status NEEDS_TEST
  *
- * NpcComposite: the data structure that composes an NPC from behaviors.
- * Also provides createNpcEntity() — a helper that creates the DCL box entity,
- * billboard label, and pointer event in one call.
+ * InteractiveComposite: any interactive entity composed of behaviors.
+ * Not limited to humanoid NPCs — works for stations, boards, machines, signs.
  *
- * Usage:
- *   const fishBoard: NpcComposite = {
- *     displayName: 'Fishing Mission Board',
- *     missionGiver: new MissionGiverBehavior([FISHING_BASIC_QUEST])
- *   }
- *   createNpcEntity({ pos, color, hoverText: 'Read Board [E]', npc: fishBoard, gameMgr })
- *   // On [E]: gameMgr.popupMgr.openNpcPopup(fishBoard)
+ * Two factory helpers:
+ *   createInteractiveEntity() — entity that opens the InteractivePopupModule
+ *   createInteractableBox()   — entity with a custom click callback (no popup)
  *
  * @changelog
- *   0.0001 - Initial. Built for dcl_popupInteractiveA behavior-system sprint.
+ *   0.0001 - Initial (NpcComposite, createNpcEntity).
+ *   0.0002 - Renamed NpcComposite→InteractiveComposite, createNpcEntity→createInteractiveEntity.
+ *            Added crafter/refiner fields. Added createInteractableBox() shared helper.
  */
 
 import {
@@ -32,48 +29,119 @@ import {
   MissionGiverBehavior,
   SellerBehavior,
   BuyerBehavior,
+  CrafterBehavior,
+  RefinerBehavior,
   MessengerBehavior,
 } from './npcBehaviors'
 
-// ─── NpcComposite ─────────────────────────────────────────────────────────────
+// ─── InteractiveComposite ─────────────────────────────────────────────────────
 
 /**
- * An NPC is a bag of optional behaviors.
- * The NpcPopupModule renders only the tabs that have a backing behavior.
- * Entity type (board, humanoid NPC, vending machine) doesn't matter —
- * the behaviors are what drive the UI.
+ * An interactive entity is a bag of optional behaviors.
+ * The InteractivePopupModule renders only the tabs that have a backing behavior.
+ * Any entity type (board, NPC, station, vending machine) can use this pattern.
  */
-export interface NpcComposite {
+export interface InteractiveComposite {
   displayName: string
+  // Popup behaviors (each drives a tab in InteractivePopupModule)
+  messenger?:    MessengerBehavior
   missionGiver?: MissionGiverBehavior
+  crafter?:      CrafterBehavior
+  refiner?:      RefinerBehavior
   seller?:       SellerBehavior
   buyer?:        BuyerBehavior
-  messenger?:    MessengerBehavior
 }
 
-// ─── Entity Factory ───────────────────────────────────────────────────────────
+// Backward-compat alias (temporary — remove after all call sites updated)
+export type NpcComposite = InteractiveComposite
 
-export interface NpcEntityConfig {
+// ─── createInteractiveEntity ──────────────────────────────────────────────────
+
+export interface InteractiveEntityConfig {
   pos: Vector3
-  /** Box scale (default 2×2×0.25 — flat board). */
   scale?: Vector3
   color: Color4
-  /** Billboard label text. */
   label?: string
   hoverText: string
-  npc: NpcComposite
+  entity: InteractiveComposite
   gameMgr: any
 }
 
+// Also accept old 'npc' key for backward compat during transition
+export interface LegacyInteractiveEntityConfig extends Omit<InteractiveEntityConfig, 'entity'> {
+  npc?: InteractiveComposite
+  entity?: InteractiveComposite
+}
+
 /**
- * Create a box entity + billboard label + pointer event for an NPC composite.
- * Returns the main interactive entity.
+ * Create a box entity + billboard label + pointer event for an InteractiveComposite.
+ * On [E] click: opens the InteractivePopupModule for this entity.
  */
-export function createNpcEntity(cfg: NpcEntityConfig): Entity {
-  const { pos, color, hoverText, npc, gameMgr } = cfg
+export function createInteractiveEntity(cfg: LegacyInteractiveEntityConfig): Entity {
+  const composite = cfg.entity ?? cfg.npc!
+  const { pos, color, hoverText, gameMgr } = cfg
   const scale = cfg.scale ?? Vector3.create(2.0, 2.0, 0.25)
 
-  // Main interactive box
+  const e = _buildBox(pos, scale, color)
+
+  const labelText = cfg.label ?? composite.displayName
+  _buildLabel(pos, scale, labelText)
+
+  pointerEventsSystem.onPointerDown(
+    { entity: e, opts: { button: InputAction.IA_PRIMARY, hoverText, maxDistance: 8 } },
+    () => {
+      if (gameMgr.popupMgr.isPopupOpen()) return
+      gameMgr.popupMgr.openInteractivePopup(composite)
+    }
+  )
+
+  return e
+}
+
+// Backward-compat alias
+export const createNpcEntity = createInteractiveEntity
+
+// ─── createInteractableBox ────────────────────────────────────────────────────
+
+export interface InteractableBoxConfig {
+  pos: Vector3
+  scale?: Vector3
+  color: Color4
+  label?: string
+  hoverText: string
+  maxDistance?: number
+  onClick: () => void
+}
+
+/**
+ * Shared helper: create a box entity + billboard label + pointer event.
+ * Use for any entity that reacts to click without opening a full popup.
+ * Eliminates the repeated box+label+pointer pattern across entity files.
+ */
+export function createInteractableBox(cfg: InteractableBoxConfig): Entity {
+  const scale = cfg.scale ?? Vector3.create(2.0, 1.5, 2.0)
+  const e = _buildBox(cfg.pos, scale, cfg.color)
+
+  if (cfg.label) _buildLabel(cfg.pos, scale, cfg.label)
+
+  pointerEventsSystem.onPointerDown(
+    {
+      entity: e,
+      opts: {
+        button: InputAction.IA_PRIMARY,
+        hoverText: cfg.hoverText,
+        maxDistance: cfg.maxDistance ?? 8,
+      }
+    },
+    cfg.onClick
+  )
+
+  return e
+}
+
+// ─── Private helpers ──────────────────────────────────────────────────────────
+
+function _buildBox(pos: Vector3, scale: Vector3, color: Color4): Entity {
   const e = engine.addEntity()
   Transform.create(e, { position: pos, scale, rotation: Quaternion.Identity() })
   MeshRenderer.setBox(e)
@@ -84,29 +152,20 @@ export function createNpcEntity(cfg: NpcEntityConfig): Entity {
     emissiveIntensity: 0.3,
     roughness:         0.8,
   })
+  return e
+}
 
-  // Billboard label
-  const labelText = cfg.label ?? npc.displayName
+function _buildLabel(pos: Vector3, scale: Vector3, text: string): Entity {
   const label = engine.addEntity()
   Transform.create(label, {
     position: Vector3.create(pos.x, pos.y + scale.y * 0.5 + 0.8, pos.z),
   })
   TextShape.create(label, {
-    text: labelText,
+    text,
     fontSize: 2.2,
     textColor: Color4.White(),
     textWrapping: false,
   })
   Billboard.create(label)
-
-  // Pointer event — opens the adaptive NPC popup
-  pointerEventsSystem.onPointerDown(
-    { entity: e, opts: { button: InputAction.IA_PRIMARY, hoverText, maxDistance: 8 } },
-    () => {
-      if (gameMgr.popupMgr.isPopupOpen()) return
-      gameMgr.popupMgr.openNpcPopup(npc)
-    }
-  )
-
-  return e
+  return label
 }
