@@ -40,6 +40,7 @@ import { MarketManager, DEFAULT_MARKET } from './dn-framework/economy/marketMana
 import { DataManager } from './dn-framework/data/dataManager'
 import { AreaManager } from './dn-framework/data/areaManager'
 import { setupInteractionUiSystem } from './dn-framework/ui/systems/interactionUiSystem'
+import { Color4 } from '@dcl/sdk/math'
 
 // Global data registries
 import { WORKBENCH_RECIPES } from './data/recipeData'
@@ -101,5 +102,21 @@ export class GameManager {
     uiSetup(this)
 
     console.log('[GameManager] dcl_popupInteractiveA ready — DataManager + AreaManager active')
+  }
+
+  // ── Game-specific sell callbacks (dispatched by AreaManager via onSellAction) ──
+
+  /** Called by AreaManager when any fish is sold at the Fishmonger. */
+  onFishSold(itemId: string, _price: number): void {
+    const FISH = ['perch', 'bass', 'trout']
+    if (!FISH.includes(itemId)) return
+    if (this.questMgr.isActive('fishing_basic') && this.questMgr.getPhase('fishing_basic') === 1) {
+      this.questMgr.advancePhase('fishing_basic')
+      this.popupMgr.showFloat(
+        'Quest update: Return to the Mission Board!',
+        Color4.create(1, 0.85, 0.2, 1),
+        3500
+      )
+    }
   }
 }
