@@ -89,7 +89,12 @@ export interface TradeBuyItem {
   itemId: string
   buyPriceMode: 'static' | 'dynamic'
   buyPrice?: number         // required when buyPriceMode === 'static'
-  onSell?: (itemId: string, price: number) => void
+  /**
+   * Name of a method on GameManager to call after a successful sell of this item.
+   * Follows the same dispatch pattern as ZoneDef.onEnter/onExit.
+   * Example: 'onFishSold' → calls gameMgr.onFishSold(itemId, price)
+   */
+  onSellAction?: string
 }
 
 // ─── Workbench level definitions ──────────────────────────────────────────────
