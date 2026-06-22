@@ -320,14 +320,42 @@ export const AREA_POPUP_TEST: AreaDefinition = {
       }
     },
 
-    // ─── Chests A/B/C (stubs — legacy setup until LootBehavior is ready) ─────
+    // ─── Chests A/B/C — LootBehavior (AreaManager-native) ───────────────────
 
-    { id: 'chest_a', type: 'chest', pos: [72, 0, 100],
-      drops: { dataMethod: 'inline', inlineContent: { type: 'set', drops: [{ itemId: 'heal_potion', name: 'Healing Potion', quantity: 1 }] } } },
-    { id: 'chest_b', type: 'chest', pos: [80, 0, 100],
-      drops: { dataMethod: 'inline', inlineContent: { type: 'set', drops: [{ itemId: 'gold', name: 'Gold', quantity: 20, isCurrency: true }] } } },
-    { id: 'chest_c', type: 'chest', pos: [88, 0, 100],
-      drops: { dataMethod: 'inline', inlineContent: { type: 'set', drops: [{ itemId: 'enchanted_sword', name: 'Enchanted Sword', quantity: 1 }] } } },
+    {
+      id: 'chest_a', type: 'chest', pos: [50, 1.5, 100],
+      chestType: 'auto',
+      lootTitle: 'Supply Crate',
+      drops: { dataMethod: 'inline', inlineContent: {
+        type: 'set', drops: [
+          { itemId: 'wood',        name: 'Wood',           quantity: 3   },
+          { itemId: 'heal_potion', name: 'Healing Potion', quantity: 1   },
+        ]
+      }}
+    },
+    {
+      id: 'chest_b', type: 'chest', pos: [80, 1.5, 100],
+      chestType: 'loot_window',
+      lootTitle: 'Old Chest',
+      drops: { dataMethod: 'inline', inlineContent: {
+        type: 'set', drops: [
+          { itemId: 'iron_sword',  name: 'Iron Sword',     quantity: 1   },
+          { itemId: 'heal_potion', name: 'Healing Potion', quantity: 2   },
+          { itemId: 'gold',        name: 'Gold',           quantity: 100, isCurrency: true },
+        ]
+      }}
+    },
+    {
+      id: 'chest_c', type: 'chest', pos: [110, 1.5, 100],
+      chestType: 'choice',
+      lootTitle: 'Ancient Relic',
+      drops: { dataMethod: 'inline', inlineContent: {
+        type: 'set', drops: [
+          { itemId: 'enchanted_sword',      name: 'Enchanted Sword',      quantity: 1 },
+          { itemId: 'shield_of_fortitude',  name: 'Shield of Fortitude',  quantity: 1 },
+        ]
+      }}
+    },
 
     // ─── Fishmonger (SellerBehavior + BuyerBehavior) ─────────────────────────
 
@@ -387,20 +415,83 @@ export const AREA_POPUP_TEST: AreaDefinition = {
       }
     },
 
-    // ─── Farm Plots (stubs — legacy setup until FarmPlotBehavior is ready) ───
+    // ─── Farm Plots — FarmPlotBehavior (AreaManager-native) ─────────────────
 
-    { id: 'farm_plot_1', type: 'farm_plot', pos: [72, 0, 138],  plotId: 'plot_1', growthMs: 30000 },
-    { id: 'farm_plot_2', type: 'farm_plot', pos: [80, 0, 138],  plotId: 'plot_2', growthMs: 30000 },
-    { id: 'farm_plot_3', type: 'farm_plot', pos: [72, 0, 148],  plotId: 'plot_3', growthMs: 30000 },
-    { id: 'farm_plot_4', type: 'farm_plot', pos: [80, 0, 148],  plotId: 'plot_4', growthMs: 30000 },
+    { id: 'farm_plot_1', type: 'farm_plot', pos: [62, 0, 138], plotId: 'plot_1', growthMs: 30000 },
+    { id: 'farm_plot_2', type: 'farm_plot', pos: [76, 0, 138], plotId: 'plot_2', growthMs: 30000 },
+    { id: 'farm_plot_3', type: 'farm_plot', pos: [62, 0, 148], plotId: 'plot_3', growthMs: 30000 },
+    { id: 'farm_plot_4', type: 'farm_plot', pos: [76, 0, 148], plotId: 'plot_4', growthMs: 30000 },
 
-    // ─── Fishing Mission Board (stub — legacy until MissionGiver in AreaManager) ─
+    // ─── Fishing Mission Board + Pond (legacy — FishingSpotBehavior pending) ─
 
     { id: 'fishing_mission_board', type: 'fishing_pond', pos: [28, 0, 145], pondId: 'mission_board' },
+    { id: 'fishing_pond',          type: 'fishing_pond', pos: [28, 0, 152], pondId: 'main_pond' },
 
-    // ─── Fishing Pond (stub — legacy setup) ─────────────────────────────────
+    // ─── Patrolling Guard (interactive + MovementBehavior patrol) ────────────
+    // Tests: movement pauses when popup open, dialogue works while NPCs move.
 
-    { id: 'fishing_pond', type: 'fishing_pond', pos: [28, 0, 152], pondId: 'main_pond' },
+    {
+      id: 'guard_patrol',
+      type: 'interactive',
+      pos: [80, 1.5, 130],
+      entityScale: [2.0, 3.0, 2.0],
+      color: [0.22, 0.32, 0.62, 1],
+      label: 'GUARD\n[E]',
+      hoverText: 'Speak to Guard',
+      movement: {
+        type: 'patrol',
+        speed: 2.5,
+        waypoints: [
+          [65, 1.5, 130],
+          [65, 1.5, 165],
+          [95, 1.5, 165],
+          [95, 1.5, 130],
+        ],
+        waypointThreshold: 1.0,
+      },
+      behaviors: {
+        dialogue: {
+          startNodeId: 'root',
+          nodes: [
+            {
+              id: 'root',
+              speaker: 'Guard',
+              text: 'Halt! This area is under the village watch. Move along.',
+              choices: [
+                { text: 'Understood.' },
+                { text: 'Any news from the Elder?', nextNodeId: 'news' },
+              ]
+            },
+            {
+              id: 'news',
+              speaker: 'Guard',
+              text: 'The Elder mentioned something about goblins to the east. Best ask him directly.',
+              choices: [
+                { text: 'I already have.', nextNodeId: 'root' },
+                { text: 'I will go speak to him.' },
+              ]
+            }
+          ]
+        }
+      }
+    },
+
+    // ─── Wandering Critter (GLB + MovementBehavior wander) ──────────────────
+    // Tests: non-interactive entity movement, wander radius bounding.
+
+    {
+      id: 'village_critter',
+      type: 'glb',
+      pos: [80, 0, 80],
+      src: 'assets/scene/ground.glb',   // placeholder — replace with animal GLB
+      scale: [1.2, 1.2, 1.2],
+      movement: {
+        type: 'wander',
+        speed: 1.5,
+        wanderRadius: 12,
+        dirChangeIntervalMs: 3500,
+      }
+    },
 
   ],
 
