@@ -22,7 +22,10 @@
  */
 
 import { Recipe } from '../ui/popupManager'
-import { GiverDrop, SaleItem, RefinementFormula, DialogueBehaviorDef } from '../npcs/npcBehaviors'
+import { GiverDrop, SaleItem, RefinementFormula, DialogueBehaviorDef, LootBehaviorDef, FarmPlotBehaviorDef, MovementBehaviorDef } from '../npcs/npcBehaviors'
+
+// Re-export so area data files only need to import from areaTypes
+export type { LootBehaviorDef, FarmPlotBehaviorDef, MovementBehaviorDef }
 
 // ─── BehaviorDataRef — the core inline/preset wrapper ─────────────────────────
 
@@ -189,6 +192,11 @@ interface EntityDefBase {
    * Use for unique story entities (the blacksmith, the quest giver, etc.)
    */
   storyRole?: string
+  /**
+   * Optional movement behavior — any entity type can move.
+   * Registered with NPCMovementSystem by AreaManager at load time.
+   */
+  movement?: MovementBehaviorDef
 }
 
 /** Static GLB — placed once, no interaction. Walls, floors, props. */
@@ -235,25 +243,34 @@ export interface InteractiveEntityDef extends EntityDefBase {
   behaviors: InteractiveBehaviorSet
 }
 
-/** Farm plot — specialized plant/grow/harvest entity. */
-export interface FarmPlotEntityDef extends EntityDefBase {
-  type: 'farm_plot'
-  plotId: string
-  growthMs: number
-}
-
 /** Fishing spot — cast/wait/catch entity. */
 export interface FishingPondEntityDef extends EntityDefBase {
   type: 'fishing_pond'
   pondId: string
 }
 
-/** Loot chest — opens loot window popup with defined drops. */
+/** Loot chest — opens loot/choice/auto popup with defined drops. */
 export interface ChestEntityDef extends EntityDefBase {
   type: 'chest'
   src?: string
   drops: BehaviorDataRef<DropData>
+  /** Popup subtype. Default 'loot_window'. See LootBehaviorDef. */
+  chestType?: 'auto' | 'loot_window' | 'choice'
   lootTitle?: string
+  /** If false, chest can be re-opened infinitely. Default true (one-time). */
+  oneTime?: boolean
+}
+
+/** Farm plot — specialized plant/grow/harvest entity. */
+export interface FarmPlotBehaviorEntityDef extends EntityDefBase {
+  type: 'farm_plot'
+  plotId: string
+  growthMs?: number
+  outputItemId?: string
+  outputName?: string
+  outputQuantity?: number
+  seedItemId?: string
+  seedName?: string
 }
 
 /** All supported entity definition types. */
@@ -263,7 +280,7 @@ export type EntityDef =
   | ResourceNodeEntityDef
   | GoldCoinEntityDef
   | InteractiveEntityDef
-  | FarmPlotEntityDef
+  | FarmPlotBehaviorEntityDef
   | FishingPondEntityDef
   | ChestEntityDef
 
