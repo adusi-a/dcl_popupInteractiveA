@@ -476,19 +476,23 @@ export const AREA_POPUP_TEST: AreaDefinition = {
       }
     },
 
-    // ─── Wandering Critter (GLB + MovementBehavior wander) ──────────────────
-    // Tests: non-interactive entity movement, wander radius bounding.
+    // ─── Wandering Critter (interactive box + MovementBehavior wander) ─────
+    // Visible amber box wandering near the chests area.
+    // Replace entityScale/color with a GLB once an animal model is available.
 
     {
       id: 'village_critter',
-      type: 'glb',
-      pos: [80, 0, 80],
-      src: 'assets/scene/ground.glb',   // placeholder — replace with animal GLB
-      scale: [1.2, 1.2, 1.2],
+      type: 'interactive',
+      pos: [80, 0.75, 78],
+      entityScale: [1.0, 1.0, 1.0],
+      color: [0.82, 0.52, 0.08, 1],   // amber
+      label: '~',
+      hoverText: 'Critter',
+      behaviors: {},                    // no popup behaviors — click does nothing
       movement: {
         type: 'wander',
         speed: 1.5,
-        wanderRadius: 12,
+        wanderRadius: 10,
         dirChangeIntervalMs: 3500,
       }
     },
