@@ -21,14 +21,18 @@
  *   0.0001 - Initial. loadArea, unloadArea, zone activation, all EntityDef type handlers.
  */
 
-import { engine, Entity, Transform, GltfContainer, Tween, EasingFunction, TweenSequence, TweenLoop } from '@dcl/sdk/ecs'
+import {
+  engine, Entity, Transform, GltfContainer, Tween, EasingFunction, TweenSequence, TweenLoop,
+  MeshCollider, TextShape, Billboard, ColliderLayer,
+  pointerEventsSystem, InputAction,
+} from '@dcl/sdk/ecs'
 import { Vector3, Color4, Quaternion } from '@dcl/sdk/math'
 
 import { DataManager } from './dataManager'
 import {
   AreaDefinition, EntityDef, ZoneDef,
   ResourceNodeEntityDef, GoldCoinEntityDef,
-  InteractiveEntityDef, FarmPlotEntityDef,
+  InteractiveEntityDef, FarmPlotBehaviorEntityDef,
   FishingPondEntityDef, ChestEntityDef,
   GlbEntityDef, MovingGlbEntityDef,
   SetDropData, RandomCountDropData, WeightedLootTableDropData,
@@ -42,7 +46,11 @@ import {
   CrafterBehavior, RefinerBehavior,
   MessengerBehavior,
   DialogueBehavior,
+  LootBehavior,
+  FarmPlotBehavior,
+  MovementBehavior,
 } from '../npcs/npcBehaviors'
+import { registerFarmPlot, registerMovingEntity } from '../systems/worldSystems'
 import { InteractiveComposite, createInteractiveEntity, createInteractableBox } from '../npcs/npcComposite'
 import { createTriggerZone } from '../triggers/triggerZone'
 
@@ -153,21 +161,36 @@ export class AreaManager {
   // ── Entity spawners ───────────────────────────────────────────────────────
 
   private _spawnEntity(def: EntityDef): void {
+    let spawnedEntity: Entity | null = null
+    let spawnedComposite: any = null
+
     switch (def.type) {
-      case 'glb':           this._spawnGlb(def); break
+      case 'glb':           spawnedEntity = this._spawnGlb(def); break
       case 'moving_glb':    this._spawnMovingGlb(def); break
-      case 'resource_node': this._spawnResourceNode(def); break
+      case 'resource_node': spawnedEntity = this._spawnResourceNode(def); break
       case 'gold_coin':     this._spawnGoldCoin(def); break
-      case 'interactive':   this._spawnInteractive(def); break
+      case 'interactive':   { const r = this._spawnInteractive(def); spawnedEntity = r?.entity ?? null; spawnedComposite = r?.composite ?? null; break }
       case 'farm_plot':     this._spawnFarmPlot(def); break
       case 'fishing_pond':  this._spawnFishingPond(def); break
-      case 'chest':         this._spawnChest(def); break
+      case 'chest':         spawnedEntity = this._spawnChest(def); break
       default:
         console.error(`[AreaManager] Unknown entity type:`, (def as any).type)
     }
+
+    // Register movement behavior on any entity that has one
+    if (def.movement && spawnedEntity !== null) {
+      const behavior = new MovementBehavior(def.movement)
+      const t = Transform.getMutableOrNull(spawnedEntity)
+      if (t) {
+        behavior.spawnPos = { x: t.position.x, y: t.position.y, z: t.position.z }
+      } else {
+        behavior.spawnPos = { x: def.pos[0], y: def.pos[1], z: def.pos[2] }
+      }
+      registerMovingEntity(spawnedEntity, behavior, spawnedComposite)
+    }
   }
 
-  private _spawnGlb(def: GlbEntityDef): void {
+  private _spawnGlb(def: GlbEntityDef): Entity {
     const e = engine.addEntity()
     GltfContainer.create(e, { src: def.src })
     Transform.create(e, {
@@ -177,6 +200,7 @@ export class AreaManager {
     })
     this._staticEntities.push(e)
     this._storeStoryRole(def, e)
+    return e
   }
 
   private _spawnMovingGlb(def: MovingGlbEntityDef): void {
@@ -198,7 +222,7 @@ export class AreaManager {
     this._staticEntities.push(e)
   }
 
-  private _spawnResourceNode(def: ResourceNodeEntityDef): void {
+  private _spawnResourceNode(def: ResourceNodeEntityDef): Entity {
     const rawDropData = this.dataMgr.resolveDropData(def.drops)
     if (!rawDropData) {
       console.error(`[AreaManager] resource_node '${def.id}': could not resolve drop data`)
@@ -219,6 +243,7 @@ export class AreaManager {
 
     this._resourceEntities.push(e)
     this._storeStoryRole(def, e)
+    return e
   }
 
   private _spawnGoldCoin(def: GoldCoinEntityDef): void {
@@ -242,7 +267,7 @@ export class AreaManager {
     this._coinEntities.push(zoneEntity)
   }
 
-  private _spawnInteractive(def: InteractiveEntityDef): void {
+  private _spawnInteractive(def: InteractiveEntityDef): { entity: Entity; composite: InteractiveComposite } {
     const composite: InteractiveComposite = { displayName: def.label }
 
     // Messenger
@@ -378,23 +403,101 @@ export class AreaManager {
       ;(this.gameMgr as any)[def.storyRole] = composite
       ;(this.gameMgr as any)[`${def.storyRole}Entity`] = e
     }
+
+    return { entity: e, composite }
   }
 
-  private _spawnFarmPlot(def: FarmPlotEntityDef): void {
-    // Farm plots use specialized setup — delegate to existing setupFarmPlots()
-    // for now. Full AreaManager integration: future sprint once FarmPlotBehavior lands.
-    console.log(`[AreaManager] farm_plot '${def.id}' (${def.plotId}): delegated to setupFarmPlots() — not yet AreaManager-native`)
+  private _spawnFarmPlot(def: FarmPlotBehaviorEntityDef): void {
+    const behavior = new FarmPlotBehavior({
+      plotId:         def.plotId,
+      growthMs:       def.growthMs,
+      outputItemId:   def.outputItemId,
+      outputName:     def.outputName,
+      outputQuantity: def.outputQuantity,
+      seedItemId:     def.seedItemId,
+      seedName:       def.seedName,
+    }, this.gameMgr)
+
+    const pos = toVec3(def.pos)
+
+    // Invisible interaction collider (click target — no MeshRenderer)
+    const interactEntity = engine.addEntity()
+    Transform.create(interactEntity, {
+      position: Vector3.create(pos.x, 0.25, pos.z),
+      scale: Vector3.create(4.8, 0.5, 4.8),
+    })
+    MeshCollider.setBox(interactEntity)
+
+    // Visual GLB entity (no collision — swap src freely)
+    const visualEntity = engine.addEntity()
+    Transform.create(visualEntity, { position: Vector3.create(pos.x, 0, pos.z), scale: Vector3.One() })
+    GltfContainer.create(visualEntity, {
+      src: FarmPlotBehavior.GLB_EMPTY,
+      invisibleMeshesCollisionMask: ColliderLayer.CL_NONE,
+      visibleMeshesCollisionMask:   ColliderLayer.CL_NONE,
+    })
+
+    // Billboard label
+    const labelEntity = engine.addEntity()
+    Transform.create(labelEntity, { position: Vector3.create(pos.x, 2.4, pos.z) })
+    TextShape.create(labelEntity, {
+      text: 'Empty Plot\n[E] Plant',
+      fontSize: 2.2,
+      textColor: { r: 1, g: 1, b: 1, a: 1 },
+      textWrapping: false,
+    })
+    Billboard.create(labelEntity)
+    this._miscEntities.push(labelEntity)
+
+    // Click handler on invisible collider
+    pointerEventsSystem.onPointerDown(
+      { entity: interactEntity, opts: { button: InputAction.IA_PRIMARY, hoverText: 'Farm Plot', maxDistance: 8 } },
+      () => behavior.openPopup(this.gameMgr)
+    )
+
+    // Register with FarmSystem for growth ticks + GLB swaps
+    registerFarmPlot(behavior, visualEntity)
+
+    this._miscEntities.push(interactEntity, visualEntity)
+    console.log(`[AreaManager] farm_plot '${def.id}' (${def.plotId}): FarmPlotBehavior active`)
   }
 
   private _spawnFishingPond(def: FishingPondEntityDef): void {
-    // Fishing pond uses specialized setup — delegate to existing setupFishingPond()
-    console.log(`[AreaManager] fishing_pond '${def.id}': delegated to setupFishingPond() — not yet AreaManager-native`)
+    // Fishing pond uses specialized setup — stays legacy until FishingSpotBehavior lands.
+    console.log(`[AreaManager] fishing_pond '${def.id}': delegated to legacy setupFishingPond()`)
   }
 
-  private _spawnChest(def: ChestEntityDef): void {
-    // Chests use specialized popup — delegate to existing setupChests() for now.
-    // Full integration: replace when LootBehavior lands.
-    console.log(`[AreaManager] chest '${def.id}': delegated to setupChests() — not yet AreaManager-native`)
+  private _spawnChest(def: ChestEntityDef): Entity {
+    const rawDropData = this.dataMgr.resolveDropData(def.drops)
+    const drops = rawDropData ? resolveDrops(rawDropData) : []
+
+    const behavior = new LootBehavior({
+      chestType: def.chestType ?? 'loot_window',
+      lootTitle: def.lootTitle,
+      oneTime:   def.oneTime,
+    })
+    behavior.drops = drops
+
+    const pos   = toVec3(def.pos)
+    const scale = def.scale ? toVec3(def.scale) : Vector3.create(2.5, 2.5, 2.5)
+    const color = Color4.create(0.85, 0.62, 0.08, 1)  // gold chest color
+
+    const e = createInteractableBox({
+      pos,
+      scale,
+      color,
+      label: def.lootTitle ?? 'Chest',
+      hoverText: 'Open Chest [E]',
+      onClick: () => {
+        if (this.gameMgr.popupMgr.isPopupOpen()) return
+        behavior.onInteract(this.gameMgr)
+      }
+    })
+
+    this._miscEntities.push(e)
+    this._storeStoryRole(def, e)
+    console.log(`[AreaManager] chest '${def.id}' (${def.chestType ?? 'loot_window'}): LootBehavior active`)
+    return e
   }
 
   // ── Zone spawner ──────────────────────────────────────────────────────────
