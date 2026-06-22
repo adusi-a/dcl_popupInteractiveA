@@ -22,7 +22,7 @@
  */
 
 import { Recipe } from '../ui/popupManager'
-import { GiverDrop, SaleItem, RefinementFormula, DialogueBehaviorDef } from '../npcs/npcBehaviors'
+import { GiverDrop, SaleItem, RefinementFormula } from '../npcs/npcBehaviors'
 
 // ─── BehaviorDataRef — the core inline/preset wrapper ─────────────────────────
 
@@ -89,12 +89,7 @@ export interface TradeBuyItem {
   itemId: string
   buyPriceMode: 'static' | 'dynamic'
   buyPrice?: number         // required when buyPriceMode === 'static'
-  /**
-   * Name of a method on GameManager to call after a successful sell of this item.
-   * Follows the same dispatch pattern as ZoneDef.onEnter/onExit.
-   * Example: 'onFishSold' → calls gameMgr.onFishSold(itemId, price)
-   */
-  onSellAction?: string
+  onSell?: (itemId: string, price: number) => void
 }
 
 // ─── Workbench level definitions ──────────────────────────────────────────────
@@ -169,7 +164,6 @@ export interface InteractiveBehaviorSet {
   refiner?:      RefinerBehaviorDef
   seller?:       SellerBehaviorDef
   buyer?:        BuyerBehaviorDef
-  dialogue?:     DialogueBehaviorDef
 }
 
 // ─── Entity definitions (discriminated union by type) ─────────────────────────
