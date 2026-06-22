@@ -427,6 +427,93 @@ export const AREA_POPUP_TEST: AreaDefinition = {
     { id: 'fishing_mission_board', type: 'fishing_pond', pos: [28, 0, 145], pondId: 'mission_board' },
     { id: 'fishing_pond',          type: 'fishing_pond', pos: [28, 0, 152], pondId: 'main_pond' },
 
+    // ─── Armorer NPC (equipItem dialogue side effect) ────────────────────────
+
+    {
+      id: 'armorer',
+      type: 'interactive',
+      pos: [105, 1.5, 88],
+      entityScale: [2.0, 3.0, 2.0],
+      color: [0.52, 0.32, 0.12, 1],
+      label: 'ARMORER\n[E]',
+      hoverText: 'Speak to Armorer',
+      storyRole: 'armorer',
+      behaviors: {
+        dialogue: {
+          startNodeId: 'root',
+          nodes: [
+            {
+              id: 'root',
+              speaker: 'Armorer',
+              text: 'Need your gear fitted? Bring me what you have crafted and I will set it right.',
+              choices: [
+                {
+                  text: 'Equip my Iron Sword.',
+                  condition: { type: 'hasItem', key: 'iron_sword', value: 1 },
+                  sideEffect: { type: 'equipItem', slot: 'weapon', key: 'iron_sword', name: 'Iron Sword', value: { attack: 8 } },
+                  nextNodeId: 'equipped_sword'
+                },
+                {
+                  text: 'Equip my Shield.',
+                  condition: { type: 'hasItem', key: 'shield', value: 1 },
+                  sideEffect: { type: 'equipItem', slot: 'offhand', key: 'shield', name: 'Shield', value: { defense: 5 } },
+                  nextNodeId: 'equipped_shield'
+                },
+                { text: 'Nothing yet. Farewell.' }
+              ]
+            },
+            {
+              id: 'equipped_sword',
+              speaker: 'Armorer',
+              text: 'Fine blade — +8 Attack. There are goblins east of here if you want to test it.',
+              choices: [{ text: 'I will find them.' }]
+            },
+            {
+              id: 'equipped_shield',
+              speaker: 'Armorer',
+              text: 'Solid work — +5 Defense. Those goblins will barely scratch you now.',
+              choices: [{ text: 'Good to know.' }]
+            }
+          ]
+        }
+      }
+    },
+
+    // ─── Goblins (HealthBehavior + EnemyAIBehavior, tags goblin/enemy) ───────
+    // 5 goblins = exactly the goblin_bounty kill quest requirement.
+    // Each has 3g loot drop and respawns after 30s.
+    // Aggro radius 10m — player needs to be within ~10m to trigger chase.
+
+    { id: 'goblin_1', type: 'enemy', pos: [105, 1.0, 45], label: 'Goblin',
+      color: [0.22, 0.52, 0.12, 1], entityScale: [1.6, 1.8, 1.6],
+      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000,
+                lootDrops: [{ itemId: 'gold', name: 'Gold', quantity: 3, isCurrency: true }] },
+      ai: { aggroRadius: 10, deaggroRadius: 18, attackRadius: 2, attackDamage: 5, speed: 3.0, wanderOnIdle: true } },
+
+    { id: 'goblin_2', type: 'enemy', pos: [112, 1.0, 40], label: 'Goblin',
+      color: [0.22, 0.52, 0.12, 1], entityScale: [1.6, 1.8, 1.6],
+      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000,
+                lootDrops: [{ itemId: 'gold', name: 'Gold', quantity: 3, isCurrency: true }] },
+      ai: { aggroRadius: 10, deaggroRadius: 18, attackRadius: 2, attackDamage: 5, speed: 3.0, wanderOnIdle: true } },
+
+    { id: 'goblin_3', type: 'enemy', pos: [100, 1.0, 52], label: 'Goblin',
+      color: [0.22, 0.52, 0.12, 1], entityScale: [1.6, 1.8, 1.6],
+      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000,
+                lootDrops: [{ itemId: 'gold', name: 'Gold', quantity: 3, isCurrency: true }] },
+      ai: { aggroRadius: 10, deaggroRadius: 18, attackRadius: 2, attackDamage: 5, speed: 3.0, wanderOnIdle: true } },
+
+    { id: 'goblin_4', type: 'enemy', pos: [115, 1.0, 55], label: 'Goblin',
+      color: [0.22, 0.52, 0.12, 1], entityScale: [1.6, 1.8, 1.6],
+      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000,
+                lootDrops: [{ itemId: 'gold', name: 'Gold', quantity: 3, isCurrency: true }] },
+      ai: { aggroRadius: 10, deaggroRadius: 18, attackRadius: 2, attackDamage: 5, speed: 3.0, wanderOnIdle: true } },
+
+    { id: 'goblin_5', type: 'enemy', pos: [108, 1.0, 60], label: 'Goblin',
+      color: [0.22, 0.52, 0.12, 1], entityScale: [1.6, 1.8, 1.6],
+      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000,
+                lootDrops: [{ itemId: 'gold', name: 'Gold', quantity: 3, isCurrency: true }] },
+      ai: { aggroRadius: 10, deaggroRadius: 18, attackRadius: 2, attackDamage: 5, speed: 3.0, wanderOnIdle: true } },
+
     // ─── Patrolling Guard (interactive + MovementBehavior patrol) ────────────
     // Tests: movement pauses when popup open, dialogue works while NPCs move.
 
