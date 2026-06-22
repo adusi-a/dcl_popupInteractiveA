@@ -66,8 +66,13 @@ export class GameManager {
   questMgr:        QuestManager
   market:          MarketManager
 
+  // ── World Flags — simple key/value story state ─────────────────────────────
+  /** Set/get one-time event flags: gameMgr.flags.set('met_elder', true), .get(), .has() */
+  flags: Map<string, any>
+
   // ── Story entity refs (set by AreaManager via storyRole) ──────────────────
   fishmonger?: any   // InteractiveComposite for the fishmonger (storyRole: 'fishmonger')
+  townElder?:  any   // InteractiveComposite for the Town Elder (storyRole: 'townElder')
 
   constructor() {
 
@@ -78,11 +83,26 @@ export class GameManager {
     // Register presets here when data grows and sharing is needed.
 
     // ── Core managers ─────────────────────────────────────────────────────────
+    this.flags           = new Map()
     this.playerMgr       = new PlayerManager(this)
     this.playerInventory = new PlayerInventory()
     this.popupMgr        = new PopupManager()
     this.questMgr        = new QuestManager()
     this.market          = DEFAULT_MARKET
+
+    // ── Scene quests — registered here; started via DialogueBehavior/MissionGiver ──
+    this.questMgr.register({
+      id: 'goblin_bounty',
+      title: 'The Goblin Threat',
+      description: 'Help the village by slaying goblins near the eastern rocks.',
+      phases: [
+        {
+          description: 'Slay 5 goblins near the eastern rocks. ({kills})',
+          objective: { type: 'kill', tag: 'goblin', count: 5 }
+        }
+      ],
+      reward: { gold: 50 }
+    }, 'locked')
 
     // ── Systems ───────────────────────────────────────────────────────────────
     setupInteractionUiSystem(this.popupMgr)
