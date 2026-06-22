@@ -45,6 +45,7 @@ export function uiSetup(gameMgr: GameManager): void {
       questMgr:  gameMgr.questMgr,
       inventory: gameMgr.playerInventory,
       market:    gameMgr.market,
+      gameMgr:   gameMgr,
     }),
 
     PlayerHud({ gameMgr }),
