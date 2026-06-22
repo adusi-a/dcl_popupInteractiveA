@@ -1,7 +1,7 @@
 /**
  * @file npcBehaviors.ts
  * @module DN DCL Framework / npcs
- * @version 0.0003
+ * @version 0.0004
  * @status NEEDS_TEST
  *
  * Modular behavior classes for InteractiveComposite entities.
@@ -30,6 +30,10 @@
  *   0.0003 - Added DialogueBehaviorDef types + DialogueBehavior class.
  *            Branching NPC conversations with flag/quest/item conditions and side effects.
  *            Used by InteractiveBehaviorSet.dialogue and rendered in Talk tab.
+ *   0.0004 - Added LootBehavior (one-time chest: auto/loot_window/choice subtypes).
+ *            Added FarmPlotBehavior (plant/grow/harvest world behavior, ECS-tick driven).
+ *            Added MovementBehavior (wander/patrol world behavior, NPCMovementSystem driven).
+ *            World behaviors are NOT popup-driven — they are per-frame autonomous systems.
  */
 
 import { QuestDefinition, QuestManager, QuestReward } from '../quests/questState'
@@ -513,5 +517,323 @@ export class DialogueBehavior {
     if (effect.type === 'openBuy') {
       this.pendingTabSwitch = 'Buy'
     }
+  }
+}
+
+// ─── LootBehavior ─────────────────────────────────────────────────────────────
+// INTERACTION BEHAVIOR — click once to receive chest contents.
+// Three subtypes:
+//   'auto'        — immediate float + item grant, no popup
+//   'loot_window' — opens the loot window popup (Take All button)
+//   'choice'      — opens choice popup (drops[0] OR drops[1])
+// oneTime: if true (default), chest becomes non-interactive after being looted.
+
+export interface LootBehaviorDef {
+  chestType?: 'auto' | 'loot_window' | 'choice'  // default: 'loot_window'
+  lootTitle?: string
+  oneTime?: boolean                               // default: true
+}
+
+export class LootBehavior {
+
+  chestType: 'auto' | 'loot_window' | 'choice'
+  lootTitle: string
+  oneTime: boolean
+  taken: boolean = false
+
+  /** Pre-resolved drops (set by AreaManager at spawn time). */
+  drops: GiverDrop[] = []
+
+  constructor(def: LootBehaviorDef) {
+    this.chestType = def.chestType ?? 'loot_window'
+    this.lootTitle = def.lootTitle ?? 'You found:'
+    this.oneTime   = def.oneTime !== false
+  }
+
+  onInteract(gameMgr: any): void {
+    if (this.taken) {
+      gameMgr.popupMgr.showFloat('Already looted.', undefined, 1200)
+      return
+    }
+    if (this.drops.length === 0) return
+
+    if (this.chestType === 'auto') {
+      for (const drop of this.drops) {
+        if (drop.isCurrency) gameMgr.playerInventory.addCurrency(drop.quantity, drop.itemId)
+        else                 gameMgr.playerInventory.addItem(drop.itemId, drop.name, drop.quantity)
+        gameMgr.popupMgr.showFloat(`+${drop.quantity} ${drop.name}`)
+      }
+      if (this.oneTime) this.taken = true
+    }
+
+    if (this.chestType === 'loot_window') {
+      gameMgr.popupMgr.openLootWindow(
+        this.drops.map(d => ({ itemId: d.itemId, name: d.name, quantity: d.quantity })),
+        this.lootTitle,
+        (items: Array<{ itemId: string; name: string; quantity: number }>) => {
+          items.forEach(item => gameMgr.playerInventory.addItem(item.itemId, item.name, item.quantity))
+          items.forEach(item => gameMgr.popupMgr.showFloat(`+${item.quantity} ${item.name}`))
+          if (this.oneTime) this.taken = true
+        }
+      )
+    }
+
+    if (this.chestType === 'choice' && this.drops.length >= 2) {
+      gameMgr.popupMgr.openChoicePopup(
+        { itemId: this.drops[0].itemId, name: this.drops[0].name },
+        { itemId: this.drops[1].itemId, name: this.drops[1].name },
+        (chosen: { itemId: string; name: string }) => {
+          gameMgr.playerInventory.addItem(chosen.itemId, chosen.name, 1)
+          gameMgr.popupMgr.showFloat(`+1 ${chosen.name}`)
+          if (this.oneTime) this.taken = true
+        }
+      )
+    }
+  }
+}
+
+// ─── FarmPlotBehavior ─────────────────────────────────────────────────────────
+// WORLD BEHAVIOR — manages the plant/grow/harvest lifecycle of a farm plot.
+// Driven by FarmSystem (worldSystems.ts) which calls tick() every ~1 second.
+// The popup reads `live` directly each frame for real-time progress display.
+
+export interface FarmPlotBehaviorDef {
+  plotId: string
+  growthMs?: number              // default 30000 (30 seconds)
+  outputItemId?: string          // default 'wheat'
+  outputName?: string            // default 'Wheat'
+  outputQuantity?: number        // default 3
+  seedItemId?: string            // default 'wheat_seeds'
+  seedName?: string              // default 'Wheat Seeds'
+}
+
+export class FarmPlotBehavior {
+
+  plotId: string
+  growthMs: number
+  seedItemId: string
+  seedName: string
+  outputItemId: string
+  outputName: string
+  outputQuantity: number
+
+  /** Live state — passed by reference to FarmPlotPopupModule. */
+  live: import('../ui/popupManager').FarmPlotLive
+
+  /** Set by AreaManager after creation — the GLB entity to swap. */
+  visualEntity: any = null
+  /** Track last rendered GLB step to avoid redundant swaps. */
+  private _lastGlbStep: number = -1
+
+  static readonly FARM_ASSETS = 'assets/farm'
+  static readonly GLB_EMPTY   = 'assets/farm/fa_unplantedA.glb'
+
+  static growthGlb(pct: number): string {
+    const step = Math.min(100, Math.max(0, Math.round(pct / 10) * 10))
+    return `${FarmPlotBehavior.FARM_ASSETS}/fa_plantedA_${step}.glb`
+  }
+
+  constructor(def: FarmPlotBehaviorDef, gameMgr: any) {
+    this.plotId        = def.plotId
+    this.growthMs      = def.growthMs      ?? 30000
+    this.seedItemId    = def.seedItemId    ?? 'wheat_seeds'
+    this.seedName      = def.seedName      ?? 'Wheat Seeds'
+    this.outputItemId  = def.outputItemId  ?? 'wheat'
+    this.outputName    = def.outputName    ?? 'Wheat'
+    this.outputQuantity = def.outputQuantity ?? 3
+
+    this.live = {
+      plotId:         this.plotId,
+      status:         'empty',
+      seedName:       '',
+      outputItemId:   this.outputItemId,
+      outputName:     this.outputName,
+      outputQuantity: this.outputQuantity,
+      plantedAt:      null,
+      growthMs:       this.growthMs,
+      availableSeeds: [],
+      onPlant:        (seedItemId: string, seedName: string) => this._plant(seedItemId, seedName, gameMgr),
+      onHarvest:      () => this._harvest(gameMgr),
+    }
+  }
+
+  /**
+   * Called by FarmSystem every ~1s.
+   * @returns true if the visual GLB should be updated (call setVisualGlb after).
+   */
+  tick(now: number): boolean {
+    if (this.live.status !== 'growing' || this.live.plantedAt === null) return false
+    const elapsed = now - this.live.plantedAt
+    const pct     = Math.min(100, Math.round((elapsed / this.live.growthMs) * 100))
+    const step    = Math.min(100, Math.floor(pct / 10) * 10)
+
+    if (pct >= 100 && this.live.status === 'growing') {
+      this.live.status = 'ready'
+      return true
+    }
+
+    if (step !== this._lastGlbStep) {
+      this._lastGlbStep = step
+      return true
+    }
+    return false
+  }
+
+  /** Returns the GLB src path that should currently be shown. */
+  currentGlbSrc(): string {
+    if (this.live.status === 'empty') return FarmPlotBehavior.GLB_EMPTY
+    if (this.live.status === 'ready') return FarmPlotBehavior.growthGlb(100)
+    if (this.live.plantedAt === null)  return FarmPlotBehavior.growthGlb(0)
+    const pct  = Math.min(100, Math.round(((Date.now() - this.live.plantedAt) / this.live.growthMs) * 100))
+    const step = Math.min(100, Math.floor(pct / 10) * 10)
+    return FarmPlotBehavior.growthGlb(step)
+  }
+
+  /** Call from click handler — refreshes seed availability and opens popup. */
+  openPopup(gameMgr: any): void {
+    if (gameMgr.popupMgr.isPopupOpen()) return
+    this.live.availableSeeds = [
+      { itemId: this.seedItemId, name: this.seedName, quantity: gameMgr.playerInventory.getCount(this.seedItemId) }
+    ].filter(s => s.quantity > 0)
+    gameMgr.popupMgr.openFarmPlotPopup(this.live)
+  }
+
+  private _plant(seedItemId: string, seedName: string, gameMgr: any): void {
+    if (!gameMgr.playerInventory.removeItem(seedItemId, 1)) return
+    this.live.status    = 'growing'
+    this.live.seedName  = seedName
+    this.live.plantedAt = Date.now()
+    this._lastGlbStep   = 0
+    gameMgr.popupMgr.showFloat(`${seedName} planted!`, undefined, 1800)
+    gameMgr.popupMgr.closePopup()
+  }
+
+  private _harvest(gameMgr: any): void {
+    gameMgr.playerInventory.addItem(this.live.outputItemId, this.live.outputName, this.live.outputQuantity)
+    gameMgr.popupMgr.showFloat(`+${this.live.outputQuantity} ${this.live.outputName}`)
+    this.live.status    = 'empty'
+    this.live.seedName  = ''
+    this.live.plantedAt = null
+    this._lastGlbStep   = -1
+    gameMgr.popupMgr.closePopup()
+  }
+}
+
+// ─── MovementBehavior ─────────────────────────────────────────────────────────
+// WORLD BEHAVIOR — autonomous per-frame entity movement.
+// Two subtypes:
+//   'wander'  — random direction changes within a radius of the spawn position
+//   'patrol'  — moves through an ordered list of waypoints, then loops
+//
+// Driven by NPCMovementSystem (worldSystems.ts). One shared engine.addSystem()
+// iterates ALL moving entities — the correct SDK7 DOP pattern.
+//
+// InteractiveComposite entities pause movement while their popup is open.
+
+export interface MovementBehaviorDef {
+  type: 'wander' | 'patrol'
+  /** Movement speed in DCL units/second. Default 2.0. */
+  speed?: number
+  /** Wander: maximum wander radius from spawn position. Default 8. */
+  wanderRadius?: number
+  /** Wander: how often to pick a new direction (ms). Default 2000–4000 random. */
+  dirChangeIntervalMs?: number
+  /** Patrol: list of waypoints [[x,y,z], ...]. Loops when last is reached. */
+  waypoints?: Array<[number, number, number]>
+  /** Patrol: distance threshold to consider waypoint reached. Default 0.5. */
+  waypointThreshold?: number
+}
+
+export class MovementBehavior {
+
+  type: 'wander' | 'patrol'
+  speed: number
+  wanderRadius: number
+  dirChangeIntervalMs: number
+  waypoints: Array<[number, number, number]>
+  waypointThreshold: number
+
+  // Runtime state — wander
+  private _angle: number         = Math.random() * Math.PI * 2
+  private _nextDirChangeMs: number = 0
+  spawnPos: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 }
+
+  // Runtime state — patrol
+  private _waypointIdx: number = 0
+
+  constructor(def: MovementBehaviorDef) {
+    this.type               = def.type
+    this.speed              = def.speed              ?? 2.0
+    this.wanderRadius       = def.wanderRadius       ?? 8
+    this.dirChangeIntervalMs = def.dirChangeIntervalMs ?? 3000
+    this.waypoints          = def.waypoints          ?? []
+    this.waypointThreshold  = def.waypointThreshold  ?? 0.5
+  }
+
+  /**
+   * Called by NPCMovementSystem each frame.
+   * @param pos   Current mutable position (Transform.getMutable(entity).position)
+   * @param dt    Delta time in seconds
+   * @param popupMgr  For checking if popup is open (pause check)
+   * @param composite Optional composite — if its popup is open, skip movement
+   * @returns true if position was updated
+   */
+  update(
+    pos: { x: number; y: number; z: number },
+    dt: number,
+    popupMgr: any,
+    composite?: any
+  ): boolean {
+    // Pause when this entity's popup is open
+    if (composite && popupMgr.isPopupOpen() && popupMgr.activeEntity === composite) return false
+
+    if (this.type === 'wander') return this._updateWander(pos, dt)
+    if (this.type === 'patrol') return this._updatePatrol(pos, dt)
+    return false
+  }
+
+  private _updateWander(pos: { x: number; y: number; z: number }, dt: number): boolean {
+    const now = Date.now()
+
+    // Pick new direction on interval or when about to leave radius
+    const dx = pos.x - this.spawnPos.x
+    const dz = pos.z - this.spawnPos.z
+    const distFromSpawn = Math.sqrt(dx * dx + dz * dz)
+
+    if (now >= this._nextDirChangeMs || distFromSpawn >= this.wanderRadius * 0.9) {
+      // Bias toward center when near edge
+      if (distFromSpawn >= this.wanderRadius * 0.85) {
+        const toCenter = Math.atan2(-dz, -dx)
+        this._angle = toCenter + (Math.random() - 0.5) * 0.8
+      } else {
+        this._angle = Math.random() * Math.PI * 2
+      }
+      const jitter = (Math.random() * 0.5 + 0.75) * this.dirChangeIntervalMs
+      this._nextDirChangeMs = now + jitter
+    }
+
+    const move = this.speed * dt
+    pos.x += Math.cos(this._angle) * move
+    pos.z += Math.sin(this._angle) * move
+    return true
+  }
+
+  private _updatePatrol(pos: { x: number; y: number; z: number }, dt: number): boolean {
+    if (this.waypoints.length === 0) return false
+    const wp = this.waypoints[this._waypointIdx]
+    const dx = wp[0] - pos.x
+    const dz = wp[2] - pos.z
+    const dist = Math.sqrt(dx * dx + dz * dz)
+
+    if (dist < this.waypointThreshold) {
+      // Advance to next waypoint (loop)
+      this._waypointIdx = (this._waypointIdx + 1) % this.waypoints.length
+      return false
+    }
+
+    const norm = this.speed * dt / dist
+    pos.x += dx * norm
+    pos.z += dz * norm
+    return true
   }
 }
