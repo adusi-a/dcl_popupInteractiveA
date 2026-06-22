@@ -13,11 +13,10 @@
  *
  * TRANSITION NOTE:
  *   AreaManager handles: gold coins, resource nodes, worm field, smelter,
- *   workbench, fishmonger, trader. These setup functions are now BYPASSED.
+ *   workbench, fishmonger, trader, chests (LootBehavior), farm plots (FarmPlotBehavior).
  *
- *   Legacy setup functions still run for: farm plots, fishing mechanic,
- *   fishing mission board, fishing pond, chests — until their behavior
- *   classes (FarmPlotBehavior, FishingSpotBehavior, LootBehavior) are ready.
+ *   Legacy setup functions still run for: fishing mechanic, fishing mission board,
+ *   fishing pond — until FishingSpotBehavior is ready.
  *
  * Scene layout (spawn at 80,1,70 facing +Z):
  *   X~48-72, Z~68  — Gold coins (4×5g) — AreaManager
@@ -40,15 +39,14 @@ import { MarketManager, DEFAULT_MARKET } from './dn-framework/economy/marketMana
 import { DataManager } from './dn-framework/data/dataManager'
 import { AreaManager } from './dn-framework/data/areaManager'
 import { setupInteractionUiSystem } from './dn-framework/ui/systems/interactionUiSystem'
+import { initWorldSystems } from './dn-framework/systems/worldSystems'
 import { Color4 } from '@dcl/sdk/math'
 
 // Global data registries
 import { WORKBENCH_RECIPES } from './data/recipeData'
 import { AREA_POPUP_TEST } from './data/areas/area_popupTest'
 
-// Legacy setup functions (entities not yet in AreaManager)
-import { setupChests } from './entities/chests'
-import { setupFarmPlots } from './entities/farmPlots'
+// Legacy setup functions (entities still using old pattern)
 import { setupFishingPond } from './entities/fishingPond'
 import { setupFishingMissionBoard } from './entities/fishingMissionBoard'
 import { initFishingMechanic } from './fishing/fishingMechanic'
@@ -106,15 +104,14 @@ export class GameManager {
 
     // ── Systems ───────────────────────────────────────────────────────────────
     setupInteractionUiSystem(this.popupMgr)
+    initWorldSystems(this.popupMgr)       // Farm tick + NPC movement systems
     initFishingMechanic(this.playerInventory, this.popupMgr, this.questMgr)
 
     // ── Area load — data-driven entity creation ────────────────────────────────
     this.areaMgr = new AreaManager(this, this.dataMgr)
     this.areaMgr.loadArea(AREA_POPUP_TEST)
 
-    // ── Legacy setup (not yet in AreaManager) ─────────────────────────────────
-    setupChests(this)
-    setupFarmPlots(this)
+    // ── Legacy setup (fishing stays legacy until FishingSpotBehavior lands) ────
     setupFishingMissionBoard(this)
     setupFishingPond(this)
 
