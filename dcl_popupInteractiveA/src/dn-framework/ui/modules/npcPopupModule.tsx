@@ -1,24 +1,26 @@
 /**
  * @file npcPopupModule.tsx
  * @module DN DCL Framework / ui / modules
- * @version 0.0002
+ * @version 0.0003
  * @status NEEDS_TEST
  *
  * InteractivePopupModule (exported as both NpcPopupModule and InteractivePopupModule).
  * Adaptive popup: reads which behaviors the active entity has, renders only relevant tabs.
  *
  * Tabs rendered by behavior present:
- *   [Talk]    — MessengerBehavior
+ *   [Talk]     — DialogueBehavior (branching tree) OR MessengerBehavior (static)
  *   [Missions] — MissionGiverBehavior
- *   [Craft]   — CrafterBehavior (recipe list + ingredient check + Craft button)
- *   [Refine]  — RefinerBehavior (formula list + input/fuel/output + Refine button)
- *   [Buy]     — SellerBehavior
- *   [Sell]    — BuyerBehavior
+ *   [Craft]    — CrafterBehavior (recipe list + ingredient check + Craft button)
+ *   [Refine]   — RefinerBehavior (formula list + input/fuel/output + Refine button)
+ *   [Buy]      — SellerBehavior
+ *   [Sell]     — BuyerBehavior
  *
  * @changelog
  *   0.0001 - Initial. Talk/Missions/Buy/Sell tabs.
  *   0.0002 - Added Craft tab (CrafterBehavior) and Refine tab (RefinerBehavior).
  *            Renamed NpcComposite→InteractiveComposite. popup type npc→interactive.
+ *   0.0003 - Added DialogueBehavior Talk tab. Props gain gameMgr for condition eval.
+ *            DialogueTab renders branching nodes + visible choices, resets on close.
  */
 
 import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
@@ -35,6 +37,7 @@ import {
   CrafterBehavior,
   RefinerBehavior,
   MessengerBehavior,
+  DialogueBehavior,
 } from '../../npcs/npcBehaviors'
 import { Recipe } from '../popupManager'
 
@@ -43,6 +46,7 @@ interface InteractivePopupModuleProps {
   questMgr:  QuestManager
   inventory: PlayerInventory
   market:    MarketManager
+  gameMgr:   any
 }
 
 let _activeTab: string = ''
@@ -77,13 +81,13 @@ const CLR_MISS      = Color4.create(0.95, 0.35, 0.35, 1)
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function InteractivePopupModule({ popupMgr, questMgr, inventory, market }: InteractivePopupModuleProps) {
+export function InteractivePopupModule({ popupMgr, questMgr, inventory, market, gameMgr }: InteractivePopupModuleProps) {
   if (popupMgr.popupType !== 'interactive' || !popupMgr.activeEntity) return null
 
   const entity = popupMgr.activeEntity as InteractiveComposite
   const tabs: string[] = []
-  if (entity.messenger)    tabs.push('Talk')
-  if (entity.missionGiver) tabs.push('Missions')
+  if (entity.dialogue || entity.messenger) tabs.push('Talk')
+  if (entity.missionGiver)                 tabs.push('Missions')
   if (entity.crafter)      tabs.push('Craft')
   if (entity.refiner)      tabs.push('Refine')
   if (entity.seller)       tabs.push('Buy')
@@ -120,7 +124,13 @@ export function InteractivePopupModule({ popupMgr, questMgr, inventory, market }
             fontSize={13}
             uiTransform={{ width: 90, height: 30 }}
             uiBackground={{ color: BG_CLOSE }}
-            onMouseDown={() => { popupMgr.closeInteractivePopup(); resetInteractiveTab() }}
+            onMouseDown={() => {
+              // Reset dialogue tree to root on manual close
+              const curr = popupMgr.activeEntity as InteractiveComposite
+              if (curr?.dialogue) curr.dialogue.resetToStart()
+              popupMgr.closeInteractivePopup()
+              resetInteractiveTab()
+            }}
           />
         </UiEntity>
 
@@ -151,7 +161,8 @@ export function InteractivePopupModule({ popupMgr, questMgr, inventory, market }
           }}
           uiBackground={{ color: BG_BODY }}
         >
-          {_activeTab === 'Talk'     && entity.messenger    && <TalkTab    b={entity.messenger} />}
+          {_activeTab === 'Talk'     && entity.dialogue                  && <DialogueTab  b={entity.dialogue} gameMgr={gameMgr} />}
+          {_activeTab === 'Talk'     && !entity.dialogue && entity.messenger && <TalkTab b={entity.messenger} />}
           {_activeTab === 'Missions' && entity.missionGiver && <MissionsTab b={entity.missionGiver} questMgr={questMgr} inventory={inventory} market={market} popupMgr={popupMgr} />}
           {_activeTab === 'Craft'    && entity.crafter      && <CraftTab   b={entity.crafter} inventory={inventory} popupMgr={popupMgr} />}
           {_activeTab === 'Refine'   && entity.refiner      && <RefineTab  b={entity.refiner} inventory={inventory} popupMgr={popupMgr} />}
@@ -166,7 +177,63 @@ export function InteractivePopupModule({ popupMgr, questMgr, inventory, market }
 // Backward-compat export
 export const NpcPopupModule = InteractivePopupModule
 
-// ─── Talk Tab ─────────────────────────────────────────────────────────────────
+// ─── Dialogue Tab ─────────────────────────────────────────────────────────────
+// Renders the current dialogue node and its condition-filtered choices.
+// Choices are buttons; clicking calls DialogueBehavior.selectChoice() which
+// advances the tree or closes the popup on terminal choices.
+
+const BG_CHOICE   = Color4.create(0.10, 0.14, 0.22, 1)
+const CLR_SPEAKER = Color4.create(0.60, 0.80, 1.00, 1)
+
+function DialogueTab({ b, gameMgr }: { b: DialogueBehavior; gameMgr: any }) {
+  const node = b.getCurrentNode()
+  if (!node) {
+    return (
+      <Label value="..." fontSize={15} color={CLR_MUTED} textAlign="middle-center"
+        uiTransform={{ margin: { top: 20 } }} />
+    )
+  }
+
+  const choices = b.getVisibleChoices(gameMgr)
+
+  return (
+    <UiEntity uiTransform={{ width: '100%', flexDirection: 'column' }}>
+      {/* Speaker name */}
+      {node.speaker && (
+        <Label value={node.speaker.toUpperCase()} fontSize={12} color={CLR_SPEAKER}
+          uiTransform={{ margin: { bottom: 8 } }} />
+      )}
+      {/* Dialogue text */}
+      <Label value={node.text} fontSize={15} color={CLR_WHITE}
+        textAlign="middle-left"
+        uiTransform={{ width: '100%', margin: { bottom: 18 } }} />
+      {/* Choices */}
+      {choices.map((choice, i) => (
+        <Button
+          key={i.toString()}
+          value={choice.text}
+          fontSize={14}
+          uiTransform={{ width: '100%', height: 40, margin: { bottom: 6 } }}
+          uiBackground={{ color: BG_CHOICE }}
+          onMouseDown={() => {
+            b.selectChoice(i, gameMgr)
+            // Handle openBuy side effect: switch popup to Buy tab
+            if (b.pendingTabSwitch) {
+              _activeTab = b.pendingTabSwitch
+              b.pendingTabSwitch = undefined
+            }
+          }}
+        />
+      ))}
+      {choices.length === 0 && (
+        <Label value="..." fontSize={14} color={CLR_MUTED} textAlign="middle-center"
+          uiTransform={{ margin: { top: 10 } }} />
+      )}
+    </UiEntity>
+  )
+}
+
+// ─── Talk Tab (static messenger — used when entity has MessengerBehavior but no DialogueBehavior) ─
 
 function TalkTab({ b }: { b: MessengerBehavior }) {
   return (
