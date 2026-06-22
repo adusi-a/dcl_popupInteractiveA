@@ -41,7 +41,6 @@ import {
   SellerBehavior, BuyerBehavior, SaleItem,
   CrafterBehavior, RefinerBehavior,
   MessengerBehavior,
-  DialogueBehavior,
 } from '../npcs/npcBehaviors'
 import { InteractiveComposite, createInteractiveEntity, createInteractableBox } from '../npcs/npcComposite'
 import { createTriggerZone } from '../triggers/triggerZone'
@@ -283,14 +282,11 @@ export class AreaManager {
       const buyerDef = def.behaviors.buyer
       let acceptedTypes: string[] = []
       let priceMap: Record<string, number> = {}
-      // Per-item sell action map: itemId → gameMgr method name
-      const onSellActions = new Map<string, string>()
 
       if (buyerDef.dataMethod === 'inline' && buyerDef.items) {
         for (const item of buyerDef.items) {
           acceptedTypes.push(item.itemId)
           if (item.buyPriceMode === 'static') priceMap[item.itemId] = item.buyPrice ?? 0
-          if (item.onSellAction) onSellActions.set(item.itemId, item.onSellAction)
         }
       } else if (buyerDef.dataMethod === 'preset' && buyerDef.shopId) {
         const preset = this.dataMgr.resolveShopPreset(buyerDef.shopId)
@@ -298,26 +294,14 @@ export class AreaManager {
           for (const item of preset.buyItems) {
             acceptedTypes.push(item.itemId)
             if (item.buyPriceMode === 'static') priceMap[item.itemId] = item.buyPrice ?? 0
-            if (item.onSellAction) onSellActions.set(item.itemId, item.onSellAction)
           }
         }
       }
 
-      // Build onSell callback: dispatches to named GameManager method per item sold
-      const onSellCallback = onSellActions.size > 0
-        ? (itemId: string, price: number) => {
-            const action = onSellActions.get(itemId)
-            if (action && typeof (this.gameMgr as any)[action] === 'function') {
-              ;(this.gameMgr as any)[action](itemId, price)
-            }
-          }
-        : undefined
-
       composite.buyer = new BuyerBehavior(
         acceptedTypes,
         (itemId) => priceMap[itemId] ?? this.gameMgr.market.getPrice(itemId),
-        'gold',
-        onSellCallback
+        'gold'
       )
     }
 
@@ -355,11 +339,6 @@ export class AreaManager {
     }
 
     // MissionGiver: handled by existing entity files for now — deferred to full integration sprint
-
-    // Dialogue
-    if (def.behaviors.dialogue) {
-      composite.dialogue = new DialogueBehavior(def.behaviors.dialogue)
-    }
 
     const e = createInteractiveEntity({
       pos: toVec3(def.pos),
