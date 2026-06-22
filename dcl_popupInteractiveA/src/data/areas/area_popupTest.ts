@@ -35,6 +35,117 @@ export const AREA_POPUP_TEST: AreaDefinition = {
 
   entities: [
 
+    // ─── Town Elder (DialogueBehavior test NPC) ──────────────────────────────
+    // Tests: branching dialogue, flag side effects, questStatus conditions, startQuest/turnInQuest.
+    // Quest 'goblin_bounty' registered in GameManager constructor.
+
+    {
+      id: 'town_elder',
+      type: 'interactive',
+      pos: [55, 1.5, 65],
+      entityScale: [2.0, 3.0, 2.0],
+      color: [0.32, 0.60, 0.42, 1],
+      label: 'ELDER\n[E]',
+      hoverText: 'Speak to Elder',
+      storyRole: 'townElder',
+      behaviors: {
+        dialogue: {
+          startNodeId: 'root',
+          nodes: [
+
+            // ── Root ────────────────────────────────────────────────────────
+            {
+              id: 'root',
+              speaker: 'Elder Bramwell',
+              text: 'Greetings, traveler. Our village is beset by goblin raiders from the eastern rocks.',
+              choices: [
+                {
+                  text: 'Tell me more about these goblins.',
+                  nextNodeId: 'situation'
+                },
+                {
+                  // Only shown when quest is not yet started
+                  text: 'I will deal with the goblins.',
+                  condition: { type: 'questStatus', key: 'goblin_bounty', value: 'locked' },
+                  sideEffect: { type: 'startQuest', key: 'goblin_bounty' },
+                  nextNodeId: 'quest_accepted'
+                },
+                {
+                  // Shown while quest is in progress
+                  text: 'I am still hunting goblins.',
+                  condition: { type: 'questStatus', key: 'goblin_bounty', value: 'active' },
+                  nextNodeId: 'inprogress'
+                },
+                {
+                  // Shown when kills complete, reward pending
+                  text: 'The goblin threat is ended.',
+                  condition: { type: 'questStatus', key: 'goblin_bounty', value: 'complete' },
+                  sideEffect: { type: 'turnInQuest', key: 'goblin_bounty' },
+                  nextNodeId: 'rewarded'
+                },
+                {
+                  text: 'Farewell, Elder.',
+                  sideEffect: { type: 'setFlag', key: 'met_elder', value: true }
+                  // no nextNodeId — closes popup
+                }
+              ]
+            },
+
+            // ── Situation explanation ────────────────────────────────────────
+            {
+              id: 'situation',
+              speaker: 'Elder Bramwell',
+              text: 'Five goblins lurk near the eastern rocks — you can see them from the ore veins. They steal our crops by night. Slay them and the village will reward you with 50 gold.',
+              choices: [
+                {
+                  text: 'I will take that quest.',
+                  condition: { type: 'questStatus', key: 'goblin_bounty', value: 'locked' },
+                  sideEffect: { type: 'startQuest', key: 'goblin_bounty' },
+                  nextNodeId: 'quest_accepted'
+                },
+                {
+                  text: 'Understood. I will return.',
+                  nextNodeId: 'root'
+                }
+              ]
+            },
+
+            // ── Quest accepted ──────────────────────────────────────────────
+            {
+              id: 'quest_accepted',
+              speaker: 'Elder Bramwell',
+              text: 'Brave soul! Slay five goblins near the eastern rocks. We will light a fire for your return.',
+              choices: [
+                { text: 'I will not fail.' }
+                // no nextNodeId — closes
+              ]
+            },
+
+            // ── Quest in progress ───────────────────────────────────────────
+            {
+              id: 'inprogress',
+              speaker: 'Elder Bramwell',
+              text: 'The village waits anxiously. Return when all five goblins are slain.',
+              choices: [
+                { text: 'I will return soon.' }
+              ]
+            },
+
+            // ── Quest rewarded ──────────────────────────────────────────────
+            {
+              id: 'rewarded',
+              speaker: 'Elder Bramwell',
+              text: 'You have saved us! The village is in your debt. Here is your reward of 50 gold.',
+              choices: [
+                { text: 'Thank you, Elder.' }
+              ]
+            }
+
+          ]
+        }
+      }
+    },
+
     // ─── Gold Coins (auto-collect trigger zones) ─────────────────────────────
 
     { id: 'coin_1', type: 'gold_coin', pos: [72, 0, 68], amount: 5 },
@@ -242,9 +353,9 @@ export const AREA_POPUP_TEST: AreaDefinition = {
         buyer: {
           dataMethod: 'inline',
           items: [
-            { itemId: 'perch', buyPriceMode: 'static', buyPrice: 3 },
-            { itemId: 'bass',  buyPriceMode: 'static', buyPrice: 8 },
-            { itemId: 'trout', buyPriceMode: 'static', buyPrice: 6 },
+            { itemId: 'perch', buyPriceMode: 'static', buyPrice: 3, onSellAction: 'onFishSold' },
+            { itemId: 'bass',  buyPriceMode: 'static', buyPrice: 8, onSellAction: 'onFishSold' },
+            { itemId: 'trout', buyPriceMode: 'static', buyPrice: 6, onSellAction: 'onFishSold' },
           ]
         }
       }
