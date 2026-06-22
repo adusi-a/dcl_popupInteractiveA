@@ -32,6 +32,7 @@ import {
   CrafterBehavior,
   RefinerBehavior,
   MessengerBehavior,
+  DialogueBehavior,
 } from './npcBehaviors'
 
 // ─── InteractiveComposite ─────────────────────────────────────────────────────
@@ -43,13 +44,14 @@ import {
  */
 export interface InteractiveComposite {
   displayName: string
-  // Popup behaviors (each drives a tab in InteractivePopupModule)
+  // Interaction behaviors (each drives a tab in InteractivePopupModule)
   messenger?:    MessengerBehavior
   missionGiver?: MissionGiverBehavior
   crafter?:      CrafterBehavior
   refiner?:      RefinerBehavior
   seller?:       SellerBehavior
   buyer?:        BuyerBehavior
+  dialogue?:     DialogueBehavior
 }
 
 // Backward-compat alias (temporary — remove after all call sites updated)
