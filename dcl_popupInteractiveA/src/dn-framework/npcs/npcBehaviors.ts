@@ -1,22 +1,18 @@
 /**
  * @file npcBehaviors.ts
  * @module DN DCL Framework / npcs
- * @version 0.0003
+ * @version 0.0002
  * @status NEEDS_TEST
  *
  * Modular behavior classes for InteractiveComposite entities.
- * Behaviors = ALL entity logic. Two categories:
- *   INTERACTION BEHAVIORS: player-triggered, open a popup tab.
- *   WORLD BEHAVIORS: autonomous/per-frame, no popup (movement, health, trigger — future sprints).
  *
- * INTERACTION BEHAVIORS (drive tabs in InteractivePopupModule):
+ * POPUP BEHAVIORS (drive tabs in InteractivePopupModule):
  *   MissionGiverBehavior  — quests to give, accept, turn in
  *   SellerBehavior        — sells items/services to player
  *   BuyerBehavior         — buys items from player
  *   CrafterBehavior       — recipe-based crafting (workbench, crafting table)
  *   RefinerBehavior       — A + fuel C → B conversion (smelter, furnace)
  *   MessengerBehavior     — static text/dialogue display
- *   DialogueBehavior      — branching NPC conversation tree (NEW)
  *
  * ACTION BEHAVIORS (execute immediately, no popup):
  *   SimpleGiverBehavior   — click → receive items/currency, optional cooldown
@@ -27,9 +23,6 @@
  *   0.0002 - Added CrafterBehavior (recipe-based), RefinerBehavior (A+fuel→B),
  *            SimpleGiverBehavior (action, no popup). SaleItem gets optional quantity.
  *            BuyerBehavior gets optional onSell callback.
- *   0.0003 - Added DialogueBehaviorDef types + DialogueBehavior class.
- *            Branching NPC conversations with flag/quest/item conditions and side effects.
- *            Used by InteractiveBehaviorSet.dialogue and rendered in Talk tab.
  */
 
 import { QuestDefinition, QuestManager, QuestReward } from '../quests/questState'
@@ -355,163 +348,5 @@ export class SimpleGiverBehavior {
     }
 
     return true
-  }
-}
-
-// ─── Dialogue types ───────────────────────────────────────────────────────────
-// Exported here (not in areaTypes.ts) to avoid circular imports.
-// areaTypes.ts imports DialogueBehaviorDef from this file.
-
-/** Condition that gates a dialogue choice — evaluated against live game state. */
-export interface DialogueConditionDef {
-  type: 'hasFlag' | 'questStatus' | 'hasItem'
-  /** flagKey, questId, or itemId depending on type. */
-  key: string
-  /** flagValue, questStatus string, or item count (number). */
-  value?: string | number | boolean
-}
-
-/** Side effect executed when the player selects a choice. */
-export interface DialogueSideEffectDef {
-  type: 'setFlag' | 'startQuest' | 'turnInQuest' | 'openBuy'
-  /** flagKey or questId (not needed for openBuy). */
-  key?: string
-  /** Value to set on the flag (for setFlag). Defaults to true. */
-  value?: string | number | boolean
-}
-
-/** A single player-selectable response. */
-export interface DialogueChoiceDef {
-  text: string
-  /** Node to navigate to. Undefined = terminal (closes popup after side effect). */
-  nextNodeId?: string
-  /** If present, this choice is hidden unless the condition passes. */
-  condition?: DialogueConditionDef
-  /** Optional side effect fired before advancing to nextNodeId. */
-  sideEffect?: DialogueSideEffectDef
-}
-
-/** A single dialogue node (one NPC speech + array of player responses). */
-export interface DialogueNodeDef {
-  id: string
-  /** Speaker name shown above the text. Defaults to entity displayName if omitted. */
-  speaker?: string
-  text: string
-  choices: DialogueChoiceDef[]
-}
-
-/** Full dialogue tree definition — passed via InteractiveBehaviorSet.dialogue. */
-export interface DialogueBehaviorDef {
-  nodes: DialogueNodeDef[]
-  startNodeId: string
-}
-
-// ─── DialogueBehavior ─────────────────────────────────────────────────────────
-// INTERACTION BEHAVIOR — renders in the Talk tab of InteractivePopupModule.
-// Supports branching conversations with conditional choices and side effects.
-
-export class DialogueBehavior {
-
-  private _nodes:       Map<string, DialogueNodeDef>
-  private _startNodeId: string
-  currentNodeId:        string
-  /**
-   * Set by the openBuy side effect. Consumed by DialogueTab after selectChoice()
-   * to switch the popup to the Buy tab without a circular import.
-   */
-  pendingTabSwitch?: string
-
-  constructor(def: DialogueBehaviorDef) {
-    this._nodes       = new Map(def.nodes.map(n => [n.id, n]))
-    this._startNodeId = def.startNodeId
-    this.currentNodeId = def.startNodeId
-  }
-
-  getCurrentNode(): DialogueNodeDef | undefined {
-    return this._nodes.get(this.currentNodeId)
-  }
-
-  /** Returns choices whose conditions pass (or have no condition). */
-  getVisibleChoices(gameMgr: any): DialogueChoiceDef[] {
-    const node = this.getCurrentNode()
-    if (!node) return []
-    return node.choices.filter(c => !c.condition || this._evalCondition(c.condition, gameMgr))
-  }
-
-  /**
-   * Player selects a visible choice by index.
-   * Executes side effect, advances to nextNodeId, or closes popup on terminal choice.
-   */
-  selectChoice(visibleIndex: number, gameMgr: any): void {
-    const choices = this.getVisibleChoices(gameMgr)
-    const choice  = choices[visibleIndex]
-    if (!choice) return
-
-    this.pendingTabSwitch = undefined
-    if (choice.sideEffect) this._execSideEffect(choice.sideEffect, gameMgr)
-
-    if (choice.nextNodeId) {
-      this.currentNodeId = choice.nextNodeId
-    } else {
-      // Terminal choice — reset tree and close popup
-      this.resetToStart()
-      gameMgr.popupMgr.closeInteractivePopup()
-    }
-  }
-
-  /** Reset tree to root (call when popup is closed by the X button). */
-  resetToStart(): void {
-    this.currentNodeId = this._startNodeId
-  }
-
-  // ── Private ────────────────────────────────────────────────────────────────
-
-  private _evalCondition(cond: DialogueConditionDef, gameMgr: any): boolean {
-    if (cond.type === 'hasFlag') {
-      const val = gameMgr.flags.get(cond.key)
-      if (cond.value !== undefined) return val === cond.value
-      return val !== undefined && val !== false
-    }
-    if (cond.type === 'questStatus') {
-      return gameMgr.questMgr.getStatus(cond.key) === cond.value
-    }
-    if (cond.type === 'hasItem') {
-      const count = typeof cond.value === 'number' ? cond.value : 1
-      return gameMgr.playerInventory.getCount(cond.key) >= count
-    }
-    return false
-  }
-
-  private _execSideEffect(effect: DialogueSideEffectDef, gameMgr: any): void {
-    if (effect.type === 'setFlag' && effect.key !== undefined) {
-      gameMgr.flags.set(effect.key, effect.value ?? true)
-    }
-    if (effect.type === 'startQuest' && effect.key) {
-      gameMgr.questMgr.setStatus(effect.key, 'active')
-    }
-    if (effect.type === 'turnInQuest' && effect.key) {
-      const quest = gameMgr.questMgr.getQuest(effect.key)
-      if (quest && (quest.status === 'complete' || quest.status === 'active')) {
-        const reward = quest.definition.reward
-        if (reward?.gold)  gameMgr.playerInventory.addCurrency(reward.gold, 'gold')
-        if (reward?.stats) {
-          for (const [k, v] of Object.entries(reward.stats as Record<string, number>)) {
-            gameMgr.playerInventory.addStat(k, v)
-          }
-        }
-        if (reward?.items) {
-          for (const item of reward.items as Array<{ itemId: string; name: string; quantity: number }>) {
-            gameMgr.playerInventory.addItem(item.itemId, item.name, item.quantity)
-          }
-        }
-        gameMgr.questMgr.setStatus(effect.key, 'turned_in')
-        if (reward?.gold) {
-          gameMgr.popupMgr.showFloat(`Quest complete! +${reward.gold}g`, undefined, 3000)
-        }
-      }
-    }
-    if (effect.type === 'openBuy') {
-      this.pendingTabSwitch = 'Buy'
-    }
   }
 }
