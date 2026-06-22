@@ -23,7 +23,7 @@
 
 import {
   engine, Entity, Transform, GltfContainer, Tween, EasingFunction, TweenSequence, TweenLoop,
-  MeshCollider, TextShape, Billboard, ColliderLayer,
+  MeshRenderer, MeshCollider, Material, TextShape, Billboard, ColliderLayer,
   pointerEventsSystem, InputAction,
 } from '@dcl/sdk/ecs'
 import { Vector3, Color4, Quaternion } from '@dcl/sdk/math'
@@ -33,7 +33,7 @@ import {
   AreaDefinition, EntityDef, ZoneDef,
   ResourceNodeEntityDef, GoldCoinEntityDef,
   InteractiveEntityDef, FarmPlotBehaviorEntityDef,
-  FishingPondEntityDef, ChestEntityDef,
+  FishingPondEntityDef, ChestEntityDef, EnemyEntityDef,
   GlbEntityDef, MovingGlbEntityDef,
   SetDropData, RandomCountDropData, WeightedLootTableDropData,
   SellerBehaviorDef, BuyerBehaviorDef,
@@ -49,8 +49,10 @@ import {
   LootBehavior,
   FarmPlotBehavior,
   MovementBehavior,
+  HealthBehavior,
+  EnemyAIBehavior,
 } from '../npcs/npcBehaviors'
-import { registerFarmPlot, registerMovingEntity } from '../systems/worldSystems'
+import { registerFarmPlot, registerMovingEntity, registerEnemyEntity } from '../systems/worldSystems'
 import { InteractiveComposite, createInteractiveEntity, createInteractableBox } from '../npcs/npcComposite'
 import { createTriggerZone } from '../triggers/triggerZone'
 
@@ -173,6 +175,7 @@ export class AreaManager {
       case 'farm_plot':     this._spawnFarmPlot(def); break
       case 'fishing_pond':  this._spawnFishingPond(def); break
       case 'chest':         spawnedEntity = this._spawnChest(def); break
+      case 'enemy':         this._spawnEnemy(def); break
       default:
         console.error(`[AreaManager] Unknown entity type:`, (def as any).type)
     }
@@ -498,6 +501,45 @@ export class AreaManager {
     this._storeStoryRole(def, e)
     console.log(`[AreaManager] chest '${def.id}' (${def.chestType ?? 'loot_window'}): LootBehavior active`)
     return e
+  }
+
+  private _spawnEnemy(def: EnemyEntityDef): void {
+    const pos   = toVec3(def.pos)
+    const scale = def.entityScale ? toVec3(def.entityScale) : Vector3.create(1.8, 1.8, 1.8)
+    const color = toColor4(def.color)
+
+    const e = engine.addEntity()
+    Transform.create(e, { position: pos, scale })
+    MeshRenderer.setBox(e)
+    MeshCollider.setBox(e)
+    Material.setPbrMaterial(e, { albedoColor: color })
+
+    // Billboard label
+    if (def.label) {
+      const label = engine.addEntity()
+      Transform.create(label, { position: Vector3.create(pos.x, pos.y + scale.y * 0.5 + 0.8, pos.z) })
+      TextShape.create(label, {
+        text: def.label,
+        fontSize: 2.0,
+        textColor: Color4.create(1, 0.3, 0.3, 1),
+        textWrapping: false,
+      })
+      Billboard.create(label)
+      this._miscEntities.push(label)
+    }
+
+    const health = new HealthBehavior(def.health)
+    const ai     = new EnemyAIBehavior(def.ai)
+    ai.spawnPos  = { x: pos.x, y: pos.y, z: pos.z }
+
+    const entityId = def.id
+
+    // Register with EnemyAISystem
+    registerEnemyEntity(e, entityId, health, ai, { x: scale.x, y: scale.y, z: scale.z })
+
+    this._miscEntities.push(e)
+    this._storeStoryRole(def, e)
+    console.log(`[AreaManager] enemy '${def.id}' (${def.health.maxHp}HP, tags: ${def.health.tags?.join(',') ?? 'none'}): registered`)
   }
 
   // ── Zone spawner ──────────────────────────────────────────────────────────
