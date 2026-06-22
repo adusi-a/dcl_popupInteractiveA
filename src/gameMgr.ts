@@ -39,8 +39,9 @@ import { MarketManager, DEFAULT_MARKET } from './dn-framework/economy/marketMana
 import { DataManager } from './dn-framework/data/dataManager'
 import { AreaManager } from './dn-framework/data/areaManager'
 import { setupInteractionUiSystem } from './dn-framework/ui/systems/interactionUiSystem'
-import { initWorldSystems } from './dn-framework/systems/worldSystems'
+import { initWorldSystems, getLiveEnemies } from './dn-framework/systems/worldSystems'
 import { Color4 } from '@dcl/sdk/math'
+import { Transform, engine } from '@dcl/sdk/ecs'
 
 // Global data registries
 import { WORKBENCH_RECIPES } from './data/recipeData'
@@ -68,9 +69,20 @@ export class GameManager {
   /** Set/get one-time event flags: gameMgr.flags.set('met_elder', true), .get(), .has() */
   flags: Map<string, any>
 
+  // ── Player HP ──────────────────────────────────────────────────────────────
+  playerHP: { current: number; max: number }
+
+  // ── Equipment ─────────────────────────────────────────────────────────────
+  equipment: Map<'weapon' | 'offhand' | 'accessory', { itemId: string; name: string; stats: Record<string, number> } | null>
+
+  // ── Combat cooldown ────────────────────────────────────────────────────────
+  private _lastAttackMs:    number = 0
+  private _attackCooldownMs: number = 800
+
   // ── Story entity refs (set by AreaManager via storyRole) ──────────────────
   fishmonger?: any   // InteractiveComposite for the fishmonger (storyRole: 'fishmonger')
   townElder?:  any   // InteractiveComposite for the Town Elder (storyRole: 'townElder')
+  armorer?:    any   // InteractiveComposite for the Armorer (storyRole: 'armorer')
 
   constructor() {
 
@@ -82,11 +94,17 @@ export class GameManager {
 
     // ── Core managers ─────────────────────────────────────────────────────────
     this.flags           = new Map()
+    this.playerHP        = { current: 100, max: 100 }
+    this.equipment       = new Map([['weapon', null], ['offhand', null], ['accessory', null]])
     this.playerMgr       = new PlayerManager(this)
     this.playerInventory = new PlayerInventory()
     this.popupMgr        = new PopupManager()
     this.questMgr        = new QuestManager()
     this.market          = DEFAULT_MARKET
+
+    // ── Player base stats ─────────────────────────────────────────────────────
+    this.playerInventory.addStat('attack',  5)   // base melee attack (weapon adds on top)
+    this.playerInventory.addStat('defense', 0)   // base defense (shield/offhand adds on top)
 
     // ── Scene quests — registered here; started via DialogueBehavior/MissionGiver ──
     this.questMgr.register({
@@ -104,7 +122,7 @@ export class GameManager {
 
     // ── Systems ───────────────────────────────────────────────────────────────
     setupInteractionUiSystem(this.popupMgr)
-    initWorldSystems(this.popupMgr)       // Farm tick + NPC movement systems
+    initWorldSystems(this)                // Farm tick + NPC movement + Enemy AI systems
     initFishingMechanic(this.playerInventory, this.popupMgr, this.questMgr)
 
     // ── Area load — data-driven entity creation ────────────────────────────────
@@ -135,5 +153,84 @@ export class GameManager {
         3500
       )
     }
+  }
+
+  // ── Equipment ───────────────────────────────────────────────────────────────
+
+  equipItem(
+    slot: 'weapon' | 'offhand' | 'accessory',
+    itemId: string,
+    name: string,
+    stats: Record<string, number>
+  ): void {
+    this.equipment.set(slot, { itemId, name, stats })
+    const statStr = Object.entries(stats).map(([k, v]) => `+${v} ${k}`).join(', ')
+    this.popupMgr.showFloat(`Equipped: ${name}  (${statStr})`, Color4.create(0.6, 0.9, 1, 1), 2500)
+  }
+
+  unequipItem(slot: 'weapon' | 'offhand' | 'accessory'): void {
+    this.equipment.set(slot, null)
+  }
+
+  /**
+   * Returns the effective value of a stat: base (from inventory stats) + all equipment bonuses.
+   * Used by playerAttack() for attack damage, and enemy AI for player defense reduction.
+   */
+  getEffectiveStat(stat: string): number {
+    const base = this.playerInventory.getStat(stat) ?? 0
+    let bonus = 0
+    for (const item of this.equipment.values()) {
+      if (item?.stats[stat]) bonus += item.stats[stat]
+    }
+    return base + bonus
+  }
+
+  // ── Combat ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Take damage from an enemy attack.
+   * Applies effective defense reduction, clamps HP to minimum 1 (no player death yet).
+   */
+  takeDamage(rawAmount: number): void {
+    const defense = this.getEffectiveStat('defense')
+    const damage  = Math.max(1, rawAmount - defense)
+    this.playerHP.current = Math.max(1, this.playerHP.current - damage)
+    this.popupMgr.showFloat(`-${damage} HP`, Color4.create(1, 0.2, 0.2, 1), 1500)
+  }
+
+  /**
+   * Player melee attack — finds nearest live enemy within 6m, deals damage.
+   * Damage = getEffectiveStat('attack'), default 5 base + weapon bonus.
+   * Has a short cooldown (800ms) to prevent button spam.
+   */
+  playerAttack(): void {
+    const now = Date.now()
+    if (now - this._lastAttackMs < this._attackCooldownMs) return
+
+    const playerT = Transform.getOrNull(engine.PlayerEntity)
+    if (!playerT) return
+
+    const enemies = getLiveEnemies()
+    let nearest: ReturnType<typeof getLiveEnemies>[0] | null = null
+    let nearestDist = 6   // max attack range in meters
+
+    for (const entry of enemies) {
+      const t = Transform.getMutableOrNull(entry.entity)
+      if (!t) continue
+      const dx = t.position.x - playerT.position.x
+      const dz = t.position.z - playerT.position.z
+      const dist = Math.sqrt(dx * dx + dz * dz)
+      if (dist < nearestDist) { nearestDist = dist; nearest = entry }
+    }
+
+    if (!nearest) {
+      this.popupMgr.showFloat('No enemy in range.', undefined, 1200)
+      return
+    }
+
+    this._lastAttackMs = now
+    const damage = Math.max(1, this.getEffectiveStat('attack'))
+    nearest.health.takeDamage(damage, nearest.entityId, this)
+    this.popupMgr.showFloat(`⚔ ${damage}`, Color4.create(1, 0.85, 0.1, 1), 1200)
   }
 }
