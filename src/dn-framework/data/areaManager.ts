@@ -222,11 +222,11 @@ export class AreaManager {
     this._staticEntities.push(e)
   }
 
-  private _spawnResourceNode(def: ResourceNodeEntityDef): Entity {
+  private _spawnResourceNode(def: ResourceNodeEntityDef): Entity | null {
     const rawDropData = this.dataMgr.resolveDropData(def.drops)
     if (!rawDropData) {
       console.error(`[AreaManager] resource_node '${def.id}': could not resolve drop data`)
-      return
+      return null
     }
 
     const drops = resolveDrops(rawDropData)
