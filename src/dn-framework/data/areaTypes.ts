@@ -22,10 +22,10 @@
  */
 
 import { Recipe } from '../ui/popupManager'
-import { GiverDrop, SaleItem, RefinementFormula, DialogueBehaviorDef, LootBehaviorDef, FarmPlotBehaviorDef, MovementBehaviorDef } from '../npcs/npcBehaviors'
+import { GiverDrop, SaleItem, RefinementFormula, DialogueBehaviorDef, LootBehaviorDef, FarmPlotBehaviorDef, MovementBehaviorDef, HealthBehaviorDef, EnemyAIBehaviorDef } from '../npcs/npcBehaviors'
 
 // Re-export so area data files only need to import from areaTypes
-export type { LootBehaviorDef, FarmPlotBehaviorDef, MovementBehaviorDef }
+export type { LootBehaviorDef, FarmPlotBehaviorDef, MovementBehaviorDef, HealthBehaviorDef, EnemyAIBehaviorDef }
 
 // ─── BehaviorDataRef — the core inline/preset wrapper ─────────────────────────
 
@@ -273,6 +273,19 @@ export interface FarmPlotBehaviorEntityDef extends EntityDefBase {
   seedName?: string
 }
 
+/** Enemy NPC — has health + AI state machine. Box placeholder until GLB is available. */
+export interface EnemyEntityDef extends EntityDefBase {
+  type: 'enemy'
+  /** Display label (billboard above entity). */
+  label?: string
+  color?: [number, number, number, number]
+  entityScale?: [number, number, number]
+  /** Health configuration — HP, faction, tags, loot, respawn. */
+  health: HealthBehaviorDef
+  /** AI configuration — aggro radius, attack radius, speed, etc. */
+  ai: EnemyAIBehaviorDef
+}
+
 /** All supported entity definition types. */
 export type EntityDef =
   | GlbEntityDef
@@ -283,6 +296,7 @@ export type EntityDef =
   | FarmPlotBehaviorEntityDef
   | FishingPondEntityDef
   | ChestEntityDef
+  | EnemyEntityDef
 
 // ─── Zone definition ──────────────────────────────────────────────────────────
 
