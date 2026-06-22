@@ -41,6 +41,7 @@ import {
   SellerBehavior, BuyerBehavior, SaleItem,
   CrafterBehavior, RefinerBehavior,
   MessengerBehavior,
+  DialogueBehavior,
 } from '../npcs/npcBehaviors'
 import { InteractiveComposite, createInteractiveEntity, createInteractableBox } from '../npcs/npcComposite'
 import { createTriggerZone } from '../triggers/triggerZone'
@@ -354,6 +355,11 @@ export class AreaManager {
     }
 
     // MissionGiver: handled by existing entity files for now — deferred to full integration sprint
+
+    // Dialogue
+    if (def.behaviors.dialogue) {
+      composite.dialogue = new DialogueBehavior(def.behaviors.dialogue)
+    }
 
     const e = createInteractiveEntity({
       pos: toVec3(def.pos),
