@@ -1,7 +1,7 @@
 /**
  * @file questState.ts
  * @module DN DCL Framework / quests
- * @version 0.0003
+ * @version 0.0002
  * @status NEEDS_TEST
  *
  * Multi-phase quest state machine for DCL SDK7 scenes.
@@ -26,32 +26,15 @@
  *   0.0001 - Initial. Locked/available/active/complete/turned_in state machine.
  *   0.0002 - Added QuestDefinition with phases array, advancePhase(),
  *            getCurrentPhaseDescription(), QuestReward. Backward-compat register().
- *   0.0003 - Added KillObjective on QuestPhase. Added reportKill() — call on entity death
- *            to auto-increment kill progress and advance phase when count is met.
- *            getCurrentPhaseDescription() interpolates {kills} token.
  */
 
 export type QuestStatus = 'locked' | 'available' | 'active' | 'complete' | 'turned_in'
 
 // ─── Quest Definition (what the game designer specifies) ──────────────────────
 
-/** Kill-count objective attached to a quest phase. */
-export interface KillObjective {
-  type: 'kill'
-  /** Entity tag that must be present on the killed entity (e.g. 'goblin'). */
-  tag: string
-  /** Optional: only count kills of this specific entity ID. */
-  entityId?: string
-  /** Total kills needed to auto-advance this phase. */
-  count: number
-}
-
 export interface QuestPhase {
-  /** Text shown in the mission board UI when this phase is active.
-   *  Use {kills} as a placeholder to show current/required kill count. */
+  /** Text shown in the mission board UI when this phase is active. */
   description: string
-  /** Optional objective that auto-advances the phase when its target is met. */
-  objective?: KillObjective
 }
 
 export interface QuestReward {
@@ -164,23 +147,12 @@ export class QuestManager {
     return this.getPhase(id) + 1
   }
 
-  /** Returns description of the current phase (for mission board display).
-   *  Interpolates {kills} with current/required kill count if a kill objective is present. */
+  /** Returns description of the current phase (for mission board display). */
   getCurrentPhaseDescription(id: string): string {
     const q = this._quests.get(id)
     if (!q) return ''
     const phases = q.definition.phases
-    const phase  = phases[q.currentPhase]
-    if (!phase) return ''
-
-    let desc = phase.description
-    if (phase.objective?.type === 'kill') {
-      const key     = `kills_p${q.currentPhase}`
-      const current = (q.progress[key] as number) ?? 0
-      const total   = phase.objective.count
-      desc = desc.replace('{kills}', `${current}/${total}`)
-    }
-    return desc
+    return phases[q.currentPhase]?.description ?? ''
   }
 
   getTotalPhases(id: string): number {
@@ -207,41 +179,6 @@ export class QuestManager {
     q.currentPhase++
     this._fire(q)
     return true
-  }
-
-  // ── Kill Objectives ───────────────────────────────────────────────────────────
-
-  /**
-   * Call when any entity dies. Checks all active quests for a kill objective on
-   * the current phase. If the entity's tags include the required tag (and optional
-   * entityId matches), increments kill progress and auto-advances the phase when
-   * the target count is reached.
-   *
-   * @param entityId  The unique ID of the entity that died.
-   * @param tags      String tags on that entity (e.g. ['goblin', 'enemy']).
-   */
-  reportKill(entityId: string, tags: string[]): void {
-    for (const quest of this.getActiveQuests()) {
-      const phase = quest.definition.phases[quest.currentPhase]
-      if (!phase?.objective || phase.objective.type !== 'kill') continue
-
-      const obj = phase.objective
-      // Check tag match
-      if (!tags.includes(obj.tag)) continue
-      // Check optional specific entity ID
-      if (obj.entityId && obj.entityId !== entityId) continue
-
-      // Increment kill count
-      const key     = `kills_p${quest.currentPhase}`
-      const current = (quest.progress[key] as number) ?? 0
-      const next    = current + 1
-      this.setProgress(quest.definition.id, { [key]: next })
-
-      // Auto-advance phase when objective met
-      if (next >= obj.count) {
-        this.advancePhase(quest.definition.id)
-      }
-    }
   }
 
   // ── Progress ─────────────────────────────────────────────────────────────────
