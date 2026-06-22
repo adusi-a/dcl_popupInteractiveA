@@ -30,16 +30,18 @@
  *   0.0003 - Added DialogueBehaviorDef types + DialogueBehavior class.
  *            Branching NPC conversations with flag/quest/item conditions and side effects.
  *            Used by InteractiveBehaviorSet.dialogue and rendered in Talk tab.
- *   0.0004 - Added LootBehavior (one-time chest: auto/loot_window/choice subtypes).
- *            Added FarmPlotBehavior (plant/grow/harvest world behavior, ECS-tick driven).
- *            Added MovementBehavior (wander/patrol world behavior, NPCMovementSystem driven).
- *            World behaviors are NOT popup-driven — they are per-frame autonomous systems.
+ *   0.0004 - Added LootBehavior, FarmPlotBehavior, MovementBehavior.
+ *   0.0005 - Added HealthBehavior (HP, faction, tags, death/respawn, loot drops).
+ *            Added EnemyAIBehavior (idle/chase/attack state machine, aggroRadius).
+ *            Added 'equipItem' side effect to DialogueSideEffectDef + DialogueBehavior.
+ *            Imported Color4 for damage floats.
  */
 
 import { QuestDefinition, QuestManager, QuestReward } from '../quests/questState'
 import { PlayerInventory } from '../player/playerInventory'
 import { MarketManager } from '../economy/marketManager'
 import { Recipe, PopupManager } from '../ui/popupManager'
+import { Color4 } from '@dcl/sdk/math'
 
 // ─── MissionGiverBehavior ─────────────────────────────────────────────────────
 
@@ -377,11 +379,15 @@ export interface DialogueConditionDef {
 
 /** Side effect executed when the player selects a choice. */
 export interface DialogueSideEffectDef {
-  type: 'setFlag' | 'startQuest' | 'turnInQuest' | 'openBuy'
-  /** flagKey or questId (not needed for openBuy). */
+  type: 'setFlag' | 'startQuest' | 'turnInQuest' | 'openBuy' | 'equipItem'
+  /** flagKey, questId, or itemId depending on type. */
   key?: string
-  /** Value to set on the flag (for setFlag). Defaults to true. */
-  value?: string | number | boolean
+  /** Value: flagValue (boolean/string), or equipment stats Record<string,number> for equipItem. */
+  value?: string | number | boolean | Record<string, number>
+  /** For equipItem: equipment slot ('weapon'|'offhand'|'accessory'). */
+  slot?: string
+  /** For equipItem: display name of the item. */
+  name?: string
 }
 
 /** A single player-selectable response. */
@@ -516,6 +522,12 @@ export class DialogueBehavior {
     }
     if (effect.type === 'openBuy') {
       this.pendingTabSwitch = 'Buy'
+    }
+    if (effect.type === 'equipItem' && effect.key && effect.slot) {
+      const stats = (typeof effect.value === 'object' && effect.value !== null)
+        ? effect.value as Record<string, number>
+        : {}
+      gameMgr.equipItem(effect.slot, effect.key, effect.name ?? effect.key, stats)
     }
   }
 }
@@ -835,5 +847,214 @@ export class MovementBehavior {
     pos.x += dx * norm
     pos.z += dz * norm
     return true
+  }
+}
+
+// ─── HealthBehavior ───────────────────────────────────────────────────────────
+// WORLD BEHAVIOR — entity HP, death handling, loot drops, respawn.
+// NOT a popup behavior — no interaction prompt.
+// Damage is dealt by gameMgr.playerAttack() calling health.takeDamage().
+// Death/respawn state is managed by EnemyAISystem in worldSystems.ts.
+
+export interface HealthBehaviorDef {
+  maxHp: number
+  /** Enemy faction for targeting. Default 'enemy'. */
+  faction?: 'enemy' | 'neutral'
+  /** Tags passed to QuestManager.reportKill() on death. e.g. ['goblin','enemy'] */
+  tags?: string[]
+  /** Items/currency dropped on death. */
+  lootDrops?: GiverDrop[]
+  /** Flat damage reduction. Default 0. */
+  defense?: number
+  /** Respawn delay in ms after death. 0 = no respawn (permanent). Default 0. */
+  respawnMs?: number
+}
+
+export class HealthBehavior {
+
+  maxHp:     number
+  currentHp: number
+  faction:   'enemy' | 'neutral'
+  tags:      string[]
+  lootDrops: GiverDrop[]
+  defense:   number
+  respawnMs: number
+
+  dead: boolean    = false
+  /** Date.now() + respawnMs set when entity dies. 0 = not scheduled. */
+  respawnAt: number = 0
+
+  constructor(def: HealthBehaviorDef) {
+    this.maxHp     = def.maxHp
+    this.currentHp = def.maxHp
+    this.faction   = def.faction   ?? 'enemy'
+    this.tags      = def.tags      ?? []
+    this.lootDrops = def.lootDrops ?? []
+    this.defense   = def.defense   ?? 0
+    this.respawnMs = def.respawnMs ?? 0
+  }
+
+  /**
+   * Deal damage to this entity.
+   * @param rawDamage  Raw damage before defense reduction.
+   * @param entityId   Unique ID string for kill tracking.
+   * @param gameMgr    Game manager reference for loot, quests, floats.
+   */
+  takeDamage(rawDamage: number, entityId: string, gameMgr: any): void {
+    if (this.dead) return
+    const damage = Math.max(1, rawDamage - this.defense)
+    this.currentHp = Math.max(0, this.currentHp - damage)
+    if (this.currentHp <= 0) this._onDeath(entityId, gameMgr)
+  }
+
+  /** Called by EnemyAISystem after respawnMs elapses. */
+  respawn(): void {
+    this.dead      = false
+    this.currentHp = this.maxHp
+    this.respawnAt = 0
+  }
+
+  private _onDeath(entityId: string, gameMgr: any): void {
+    this.dead = true
+    // Give loot
+    for (const drop of this.lootDrops) {
+      if (drop.isCurrency) gameMgr.playerInventory.addCurrency(drop.quantity, drop.itemId)
+      else                 gameMgr.playerInventory.addItem(drop.itemId, drop.name, drop.quantity)
+      gameMgr.popupMgr.showFloat(`+${drop.quantity} ${drop.name}`, Color4.create(1, 0.9, 0.3, 1), 2000)
+    }
+    // Report kill to quest system (triggers goblin_bounty etc.)
+    gameMgr.questMgr.reportKill(entityId, this.tags)
+    // Schedule respawn
+    if (this.respawnMs > 0) {
+      this.respawnAt = Date.now() + this.respawnMs
+    }
+  }
+}
+
+// ─── EnemyAIBehavior ──────────────────────────────────────────────────────────
+// WORLD BEHAVIOR — enemy NPC state machine: idle / chase / attack.
+// Driven by EnemyAISystem (worldSystems.ts) — one shared engine.addSystem().
+// Only tracks ENEMY→PLAYER aggro; player→enemy attacks use gameMgr.playerAttack().
+
+export interface EnemyAIBehaviorDef {
+  /** Distance at which enemy spots the player. Default 10. */
+  aggroRadius?: number
+  /** Distance at which enemy gives up chase. Default 18. */
+  deaggroRadius?: number
+  /** Distance at which enemy starts attacking. Default 2. */
+  attackRadius?: number
+  /** Flat damage dealt to player each attack tick. Default 5. */
+  attackDamage?: number
+  /** Ms between attack ticks when in range. Default 2000. */
+  attackIntervalMs?: number
+  /** Chase speed in DCL units/second. Default 3.0. */
+  speed?: number
+  /** If true, enemy wanders slowly when idle. Default false. */
+  wanderOnIdle?: boolean
+}
+
+type EnemyState = 'idle' | 'chase' | 'attack'
+
+export class EnemyAIBehavior {
+
+  aggroRadius:      number
+  deaggroRadius:    number
+  attackRadius:     number
+  attackDamage:     number
+  attackIntervalMs: number
+  speed:            number
+  wanderOnIdle:     boolean
+
+  state: EnemyState = 'idle'
+  /** Set by AreaManager — the entity's spawn position for wander bounding + respawn. */
+  spawnPos: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 }
+
+  private _lastAttackMs:  number = 0
+  private _wanderAngle:   number = Math.random() * Math.PI * 2
+  private _nextWanderMs:  number = 0
+
+  constructor(def: EnemyAIBehaviorDef) {
+    this.aggroRadius      = def.aggroRadius      ?? 10
+    this.deaggroRadius    = def.deaggroRadius    ?? 18
+    this.attackRadius     = def.attackRadius     ?? 2
+    this.attackDamage     = def.attackDamage     ?? 5
+    this.attackIntervalMs = def.attackIntervalMs ?? 2000
+    this.speed            = def.speed            ?? 3.0
+    this.wanderOnIdle     = def.wanderOnIdle     ?? false
+  }
+
+  /**
+   * Called by EnemyAISystem each frame.
+   * @param pos       Mutable entity position (Transform.getMutable)
+   * @param playerPos Player position (Transform.getOrNull(PlayerEntity))
+   * @param entityId  Entity ID string — passed to health.takeDamage
+   * @param health    HealthBehavior of this entity
+   * @param gameMgr   For player damage + float notifications
+   * @param dt        Delta time in seconds
+   */
+  update(
+    pos: { x: number; y: number; z: number },
+    playerPos: { x: number; y: number; z: number },
+    entityId: string,
+    health: HealthBehavior,
+    gameMgr: any,
+    dt: number
+  ): void {
+    if (health.dead) return
+
+    const dx = playerPos.x - pos.x
+    const dz = playerPos.z - pos.z
+    const distToPlayer = Math.sqrt(dx * dx + dz * dz)
+    const now = Date.now()
+
+    // ── State transitions ────────────────────────────────────────────────────
+    if (this.state === 'idle') {
+      if (distToPlayer <= this.aggroRadius) this.state = 'chase'
+    } else if (this.state === 'chase') {
+      if (distToPlayer <= this.attackRadius)          this.state = 'attack'
+      else if (distToPlayer > this.deaggroRadius)     this.state = 'idle'
+    } else {  // 'attack'
+      if (distToPlayer > this.attackRadius * 1.8)    this.state = 'chase'
+      else if (distToPlayer > this.deaggroRadius)     this.state = 'idle'
+    }
+
+    // ── State actions ────────────────────────────────────────────────────────
+    if (this.state === 'idle') {
+      if (this.wanderOnIdle) this._doIdleWander(pos, dt, now)
+    } else if (this.state === 'chase') {
+      if (distToPlayer > 0.1) {
+        const norm = this.speed * dt / distToPlayer
+        pos.x += dx * norm
+        pos.z += dz * norm
+      }
+    } else {  // 'attack'
+      if (now - this._lastAttackMs >= this.attackIntervalMs) {
+        this._lastAttackMs = now
+        gameMgr.takeDamage(this.attackDamage)
+      }
+    }
+  }
+
+  private _doIdleWander(
+    pos: { x: number; y: number; z: number },
+    dt: number,
+    now: number
+  ): void {
+    const dx = pos.x - this.spawnPos.x
+    const dz = pos.z - this.spawnPos.z
+    const distFromSpawn = Math.sqrt(dx * dx + dz * dz)
+
+    if (now >= this._nextWanderMs || distFromSpawn >= 5) {
+      if (distFromSpawn >= 4) {
+        this._wanderAngle = Math.atan2(-dz, -dx) + (Math.random() - 0.5) * 0.6
+      } else {
+        this._wanderAngle = Math.random() * Math.PI * 2
+      }
+      this._nextWanderMs = now + 2000 + Math.random() * 2000
+    }
+
+    const wanderSpeed = this.speed * 0.4
+    pos.x += Math.cos(this._wanderAngle) * wanderSpeed * dt
+    pos.z += Math.sin(this._wanderAngle) * wanderSpeed * dt
   }
 }
