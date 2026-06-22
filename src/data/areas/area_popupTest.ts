@@ -242,9 +242,9 @@ export const AREA_POPUP_TEST: AreaDefinition = {
         buyer: {
           dataMethod: 'inline',
           items: [
-            { itemId: 'perch', buyPriceMode: 'static', buyPrice: 3 },
-            { itemId: 'bass',  buyPriceMode: 'static', buyPrice: 8 },
-            { itemId: 'trout', buyPriceMode: 'static', buyPrice: 6 },
+            { itemId: 'perch', buyPriceMode: 'static', buyPrice: 3, onSellAction: 'onFishSold' },
+            { itemId: 'bass',  buyPriceMode: 'static', buyPrice: 8, onSellAction: 'onFishSold' },
+            { itemId: 'trout', buyPriceMode: 'static', buyPrice: 6, onSellAction: 'onFishSold' },
           ]
         }
       }
