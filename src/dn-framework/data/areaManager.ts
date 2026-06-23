@@ -52,7 +52,7 @@ import {
   HealthBehavior,
   EnemyAIBehavior,
 } from '../npcs/npcBehaviors'
-import { registerFarmPlot, registerMovingEntity, registerEnemyEntity } from '../systems/worldSystems'
+import { registerFarmPlot, registerMovingEntity, registerEnemyEntity, registerDamageZone, DamageZoneEntry } from '../systems/worldSystems'
 import { InteractiveComposite, createInteractiveEntity, createInteractableBox } from '../npcs/npcComposite'
 import { createTriggerZone } from '../triggers/triggerZone'
 
@@ -548,14 +548,29 @@ export class AreaManager {
     const pos   = toVec3(def.pos)
     const scale = toVec3(def.scale)
 
+    // Register damage zone entry if this zone deals damage
+    let damageEntry: DamageZoneEntry | null = null
+    if (def.damage) {
+      damageEntry = registerDamageZone(def.damage)
+    }
+
     const e = createTriggerZone(
       pos, scale,
       () => {
+        // Damage zone enter — start ticking
+        if (damageEntry) {
+          damageEntry.isPlayerInside = true
+          damageEntry.lastTickMs     = 0  // trigger first tick immediately
+        }
         if (def.onEnter && typeof (this.gameMgr as any)[def.onEnter] === 'function') {
           ;(this.gameMgr as any)[def.onEnter]()
         }
       },
       () => {
+        // Damage zone exit — stop ticking
+        if (damageEntry) {
+          damageEntry.isPlayerInside = false
+        }
         if (def.onExit && typeof (this.gameMgr as any)[def.onExit] === 'function') {
           ;(this.gameMgr as any)[def.onExit]()
         }
@@ -564,6 +579,7 @@ export class AreaManager {
     )
 
     this._zoneEntities.push(e)
+    console.log(`[AreaManager] zone '${def.id}'${def.damage ? ` (damage: ${def.damage.damagePerTick}/${def.damage.tickIntervalMs}ms)` : ''}: registered`)
   }
 
   // ── Story role helper ─────────────────────────────────────────────────────
