@@ -277,15 +277,15 @@ function PauseMenuModule({ gameMgr }: { gameMgr: GameManager }) {
       uiTransform={{
         positionType: 'absolute',
         position: { top: 0, left: 0, right: 0, bottom: 0 },
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'flex-start',
         padding: { top: 80, left: 0, right: 0, bottom: 0 },
       }}
       uiBackground={{ color: Color4.create(0, 0, 0, 0.72) }}
     >
-      {/* Modal panel */}
+      {/* Modal panel — left: 410px matches CoordsModule offset, clears DCL native left zone */}
       <UiEntity
-        uiTransform={{ width: 920, height: 600, flexDirection: 'column' }}
+        uiTransform={{ width: 920, height: 600, flexDirection: 'column', margin: { left: 410, right: 0, top: 0, bottom: 0 } }}
         uiBackground={{ color: CLR_PANEL }}
       >
         {/* Tab bar */}
