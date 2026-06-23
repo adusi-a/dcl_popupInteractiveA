@@ -498,31 +498,31 @@ export const AREA_POPUP_TEST: AreaDefinition = {
 
     { id: 'goblin_1', type: 'enemy', pos: [105, 1.0, 45], label: 'Goblin',
       color: [0.22, 0.52, 0.12, 1], entityScale: [1.6, 1.8, 1.6],
-      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000,
+      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000, xpReward: 25,
                 lootDrops: [{ itemId: 'gold', name: 'Gold', quantity: 3, isCurrency: true }] },
       ai: { aggroRadius: 10, deaggroRadius: 18, attackRadius: 2, attackDamage: 5, speed: 3.0, wanderOnIdle: true } },
 
     { id: 'goblin_2', type: 'enemy', pos: [112, 1.0, 40], label: 'Goblin',
       color: [0.22, 0.52, 0.12, 1], entityScale: [1.6, 1.8, 1.6],
-      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000,
+      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000, xpReward: 25,
                 lootDrops: [{ itemId: 'gold', name: 'Gold', quantity: 3, isCurrency: true }] },
       ai: { aggroRadius: 10, deaggroRadius: 18, attackRadius: 2, attackDamage: 5, speed: 3.0, wanderOnIdle: true } },
 
     { id: 'goblin_3', type: 'enemy', pos: [100, 1.0, 52], label: 'Goblin',
       color: [0.22, 0.52, 0.12, 1], entityScale: [1.6, 1.8, 1.6],
-      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000,
+      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000, xpReward: 25,
                 lootDrops: [{ itemId: 'gold', name: 'Gold', quantity: 3, isCurrency: true }] },
       ai: { aggroRadius: 10, deaggroRadius: 18, attackRadius: 2, attackDamage: 5, speed: 3.0, wanderOnIdle: true } },
 
     { id: 'goblin_4', type: 'enemy', pos: [115, 1.0, 55], label: 'Goblin',
       color: [0.22, 0.52, 0.12, 1], entityScale: [1.6, 1.8, 1.6],
-      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000,
+      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000, xpReward: 25,
                 lootDrops: [{ itemId: 'gold', name: 'Gold', quantity: 3, isCurrency: true }] },
       ai: { aggroRadius: 10, deaggroRadius: 18, attackRadius: 2, attackDamage: 5, speed: 3.0, wanderOnIdle: true } },
 
     { id: 'goblin_5', type: 'enemy', pos: [108, 1.0, 60], label: 'Goblin',
       color: [0.22, 0.52, 0.12, 1], entityScale: [1.6, 1.8, 1.6],
-      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000,
+      health: { maxHp: 20, faction: 'enemy', tags: ['goblin','enemy'], respawnMs: 30000, xpReward: 25,
                 lootDrops: [{ itemId: 'gold', name: 'Gold', quantity: 3, isCurrency: true }] },
       ai: { aggroRadius: 10, deaggroRadius: 18, attackRadius: 2, attackDamage: 5, speed: 3.0, wanderOnIdle: true } },
 
