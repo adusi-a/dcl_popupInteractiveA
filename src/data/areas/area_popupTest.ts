@@ -459,6 +459,12 @@ export const AREA_POPUP_TEST: AreaDefinition = {
                   sideEffect: { type: 'equipItem', slot: 'offhand', key: 'shield', name: 'Shield', value: { defense: 5, shield: 80 } },
                   nextNodeId: 'equipped_shield'
                 },
+                {
+                  text: 'Equip my Shield of Fortitude.',
+                  condition: { type: 'hasItem', key: 'shield_of_fortitude', value: 1 },
+                  sideEffect: { type: 'equipItem', slot: 'offhand', key: 'shield_of_fortitude', name: 'Shield of Fortitude', value: { defense: 8, shield: 120 } },
+                  nextNodeId: 'equipped_fortitude'
+                },
                 { text: 'Nothing yet. Farewell.' }
               ]
             },
@@ -473,6 +479,12 @@ export const AREA_POPUP_TEST: AreaDefinition = {
               speaker: 'Armorer',
               text: 'Solid work — +5 Defense and 80 Shield points. Hits drain the shield first. When you stop taking damage, it recharges on its own.',
               choices: [{ text: 'Good to know.' }]
+            },
+            {
+              id: 'equipped_fortitude',
+              speaker: 'Armorer',
+              text: "Ancient relic — rare craftsmanship. +8 Defense and 120 Shield points. That'll take a beating. Shield recharges when you're clear of combat.",
+              choices: [{ text: 'Much appreciated.' }]
             }
           ]
         }
