@@ -207,9 +207,11 @@ function PlayerHud({ gameMgr }: { gameMgr: GameManager }) {
 // ─── Menu Button ──────────────────────────────────────────────────────────────
 
 function MenuButton({ gameMgr }: { gameMgr: GameManager }) {
+  // Placed right: 140px so it sits left of the Attack button (right: 16px).
+  // NOT on the left side — DCL's native UI owns the left ~25% of the screen.
   if (gameMgr.playerDead) return <UiEntity uiTransform={{ width: 0, height: 0 }} />
   return (
-    <UiEntity uiTransform={{ positionType: 'absolute', position: { bottom: '60px', left: '16px' }, width: 80, height: 52 }}>
+    <UiEntity uiTransform={{ positionType: 'absolute', position: { bottom: '60px', right: '140px' }, width: 80, height: 52 }}>
       <Button
         value="☰ MENU"
         fontSize={14}
@@ -268,19 +270,22 @@ function PauseMenuModule({ gameMgr }: { gameMgr: GameManager }) {
   ]
 
   return (
-    // Full-screen darkened backdrop (4-corner constraint for correct Yoga centering)
+    // Full-screen darkened backdrop (4-corner constraint for correct Yoga centering).
+    // justifyContent: 'flex-start' + paddingTop pushes the modal below the top HUD bar
+    // (CoordsModule/PlayerInfoModule sit at top:10px, height ~55px — clear by ~100px).
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
         position: { top: 0, left: 0, right: 0, bottom: 0 },
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
+        padding: { top: 80, left: 0, right: 0, bottom: 0 },
       }}
       uiBackground={{ color: Color4.create(0, 0, 0, 0.72) }}
     >
       {/* Modal panel */}
       <UiEntity
-        uiTransform={{ width: 920, height: 680, flexDirection: 'column' }}
+        uiTransform={{ width: 920, height: 600, flexDirection: 'column' }}
         uiBackground={{ color: CLR_PANEL }}
       >
         {/* Tab bar */}
@@ -401,11 +406,11 @@ function InventoryTab({ gameMgr }: { gameMgr: GameManager }) {
               uiBackground={{ color: SLOT_CLR }}
             >
               {item
-                ? <>
+                ? <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                     <Label value={item.name} fontSize={13} color={CLR_GOLD} />
                     <UiEntity uiTransform={{ flex: 1 }} />
                     <Label value={Object.entries(item.stats).filter(([k]) => k !== 'shield').map(([k, v]) => `+${v} ${k}`).join('  ')} fontSize={11} color={Color4.create(0.6, 0.8, 1, 1)} />
-                  </>
+                  </UiEntity>
                 : <Label value="(empty)" fontSize={12} color={CLR_MUT} />
               }
             </UiEntity>
