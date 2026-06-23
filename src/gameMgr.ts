@@ -43,6 +43,40 @@ import { initWorldSystems, getLiveEnemies } from './dn-framework/systems/worldSy
 import { Color4, Vector3 } from '@dcl/sdk/math'
 import { Transform, engine } from '@dcl/sdk/ecs'
 
+// ─── Skill Tree ────────────────────────────────────────────────────────────────
+
+export interface SkillDef {
+  id:          string
+  name:        string
+  description: string
+  cost:        number
+  requires?:   string
+  branch:      'warrior' | 'guardian' | 'sage'
+  effect:      SkillEffect
+}
+
+export type SkillEffect =
+  | { type: 'stat';        stat: string; amount: number }
+  | { type: 'maxHp';       amount: number }
+  | { type: 'maxShield';   amount: number }
+  | { type: 'shieldRegen'; amount: number }
+  | { type: 'multi';       effects: SkillEffect[] }
+
+export const SKILL_TREE: SkillDef[] = [
+  // ── Warrior ────────────────────────────────────────────────────────────────
+  { id: 'iron_skin',  name: 'Iron Skin',  description: '+20 max HP',           cost: 1, branch: 'warrior',  effect: { type: 'maxHp',  amount: 20 } },
+  { id: 'brawler',    name: 'Brawler',    description: '+3 ATK',                cost: 1, branch: 'warrior',  requires: 'iron_skin',  effect: { type: 'stat', stat: 'attack',  amount: 3  } },
+  { id: 'berserker',  name: 'Berserker',  description: '+5 ATK',                cost: 2, branch: 'warrior',  requires: 'brawler',    effect: { type: 'stat', stat: 'attack',  amount: 5  } },
+  // ── Guardian ───────────────────────────────────────────────────────────────
+  { id: 'shield_mastery', name: 'Shield Mastery', description: '+40 max shield', cost: 1, branch: 'guardian', effect: { type: 'maxShield', amount: 40 } },
+  { id: 'toughness',      name: 'Toughness',       description: '+2 DEF',         cost: 1, branch: 'guardian', requires: 'shield_mastery', effect: { type: 'stat', stat: 'defense', amount: 2 } },
+  { id: 'fortress',       name: 'Fortress',         description: '+3 DEF',         cost: 2, branch: 'guardian', requires: 'toughness',      effect: { type: 'stat', stat: 'defense', amount: 3 } },
+  // ── Sage ───────────────────────────────────────────────────────────────────
+  { id: 'recovery',    name: 'Recovery',    description: 'Shield regen +10 pts/s', cost: 1, branch: 'sage', effect: { type: 'shieldRegen', amount: 10 } },
+  { id: 'resilience',  name: 'Resilience',  description: '+10 HP, +1 DEF',         cost: 1, branch: 'sage', requires: 'recovery',   effect: { type: 'multi', effects: [{ type: 'maxHp', amount: 10 }, { type: 'stat', stat: 'defense', amount: 1 }] } },
+  { id: 'vital_surge', name: 'Vital Surge', description: '+25 max HP',             cost: 2, branch: 'sage', requires: 'resilience', effect: { type: 'maxHp', amount: 25 } },
+]
+
 // Global data registries
 import { WORKBENCH_RECIPES } from './data/recipeData'
 import { AREA_POPUP_TEST } from './data/areas/area_popupTest'
@@ -89,6 +123,22 @@ export class GameManager {
   /** True while the player is in the death screen. Clears on respawn. */
   playerDead: boolean
 
+  // ── XP + Leveling (Sprint 6) ───────────────────────────────────────────────
+  playerXP: { current: number; toNextLevel: number; level: number }
+  /** Unspent skill points earned on level-up (1 per level). */
+  playerSkillPoints: number
+  /** Set of learned skill IDs — drives Skills tab state. */
+  playerSkills: Set<string>
+  /**
+   * Additive stat bonuses from learned skills.
+   * Included in getEffectiveStat() alongside base stats + equipment.
+   */
+  playerSkillBonuses: Record<string, number>
+
+  // ── Pause Menu (Sprint 7) ──────────────────────────────────────────────────
+  pauseMenuOpen: boolean
+  pauseMenuTab:  'missions' | 'inventory' | 'skills' | 'stats' | 'map'
+
   // ── Equipment ─────────────────────────────────────────────────────────────
   equipment: Map<'weapon' | 'offhand' | 'accessory', { itemId: string; name: string; stats: Record<string, number> } | null>
 
@@ -110,11 +160,17 @@ export class GameManager {
     // Register presets here when data grows and sharing is needed.
 
     // ── Core managers ─────────────────────────────────────────────────────────
-    this.flags           = new Map()
-    this.playerHP        = { current: 100, max: 100 }
-    this.playerShield    = { current: 0, max: 0, rechargeRatePerSec: 15, rechargeDelayMs: 4000, lastDamagedAt: 0 }
-    this.playerDead      = false
-    this.equipment       = new Map([['weapon', null], ['offhand', null], ['accessory', null]])
+    this.flags              = new Map()
+    this.playerHP           = { current: 100, max: 100 }
+    this.playerShield       = { current: 0, max: 0, rechargeRatePerSec: 15, rechargeDelayMs: 4000, lastDamagedAt: 0 }
+    this.playerDead         = false
+    this.playerXP           = { current: 0, toNextLevel: 100, level: 1 }
+    this.playerSkillPoints  = 0
+    this.playerSkills       = new Set()
+    this.playerSkillBonuses = {}
+    this.pauseMenuOpen      = false
+    this.pauseMenuTab       = 'missions'
+    this.equipment          = new Map([['weapon', null], ['offhand', null], ['accessory', null]])
     this.playerMgr       = new PlayerManager(this)
     this.playerInventory = new PlayerInventory()
     this.popupMgr        = new PopupManager()
@@ -207,16 +263,18 @@ export class GameManager {
   }
 
   /**
-   * Returns the effective value of a stat: base (from inventory stats) + all equipment bonuses.
-   * Used by playerAttack() for attack damage, and enemy AI for player defense reduction.
+   * Returns the effective value of a stat:
+   *   base (inventory) + equipment bonuses + skill bonuses.
+   * Used by playerAttack(), enemy AI defense reduction, and shield pool sizing.
    */
   getEffectiveStat(stat: string): number {
-    const base = this.playerInventory.getStat(stat) ?? 0
-    let bonus = 0
+    const base  = this.playerInventory.getStat(stat) ?? 0
+    let bonus   = 0
     for (const item of this.equipment.values()) {
       if (item?.stats[stat]) bonus += item.stats[stat]
     }
-    return base + bonus
+    const skillBonus = this.playerSkillBonuses[stat] ?? 0
+    return base + bonus + skillBonus
   }
 
   // ── Combat ──────────────────────────────────────────────────────────────────
@@ -255,10 +313,82 @@ export class GameManager {
     }
   }
 
-  /** @private Called when HP reaches 0. Sets dead flag. */
+  /** @private Called when HP reaches 0. Sets dead flag, closes pause menu. */
   private _onPlayerDeath(): void {
-    this.playerDead = true
+    this.playerDead    = true
+    this.pauseMenuOpen = false
     console.error('[GameManager] Player died.')
+  }
+
+  // ── XP + Leveling ───────────────────────────────────────────────────────────
+
+  /**
+   * Award XP to the player. Triggers level-up (with while loop for multi-level).
+   * Called by HealthBehavior._onDeath when xpReward > 0.
+   */
+  addXP(amount: number): void {
+    if (amount <= 0) return
+    this.playerXP.current += amount
+    this.popupMgr.showFloat(`+${amount} XP`, Color4.create(0.7, 0.4, 1, 1), 1200)
+    while (this.playerXP.current >= this.playerXP.toNextLevel) {
+      this.playerXP.current -= this.playerXP.toNextLevel
+      this._levelUp()
+    }
+  }
+
+  private _levelUp(): void {
+    this.playerXP.level++
+    this.playerXP.toNextLevel = Math.floor(100 * Math.pow(this.playerXP.level, 1.5))
+    this.playerSkillPoints++
+    // Small HP boost per level
+    this.playerHP.max     += 5
+    this.playerHP.current  = this.playerHP.max   // full heal on level-up
+    this.popupMgr.showFloat(
+      `✦ LEVEL UP! Lv ${this.playerXP.level}  +1 Skill Point`,
+      Color4.create(1, 0.9, 0.15, 1),
+      4000
+    )
+  }
+
+  // ── Skill Tree ──────────────────────────────────────────────────────────────
+
+  /**
+   * Attempt to learn a skill. Checks: not already learned, enough points, prereqs met.
+   * Applies the skill's effect immediately and permanently.
+   */
+  learnSkill(skillId: string): void {
+    const skill = SKILL_TREE.find(s => s.id === skillId)
+    if (!skill)                                      return
+    if (this.playerSkills.has(skillId))              return   // already learned
+    if (this.playerSkillPoints < skill.cost)         return   // not enough points
+    if (skill.requires && !this.playerSkills.has(skill.requires)) return  // prereq missing
+
+    this.playerSkillPoints -= skill.cost
+    this.playerSkills.add(skillId)
+    this._applySkillEffect(skill.effect)
+    this.popupMgr.showFloat(`Learned: ${skill.name}!`, Color4.create(0.5, 0.9, 1, 1), 2500)
+  }
+
+  private _applySkillEffect(effect: SkillEffect): void {
+    switch (effect.type) {
+      case 'stat':
+        this.playerSkillBonuses[effect.stat] = (this.playerSkillBonuses[effect.stat] ?? 0) + effect.amount
+        break
+      case 'maxHp':
+        this.playerHP.max     += effect.amount
+        this.playerHP.current += effect.amount   // grant current HP too
+        break
+      case 'maxShield':
+        this.playerShield.max     += effect.amount
+        this.playerShield.current += effect.amount
+        break
+      case 'shieldRegen':
+        this.playerShield.rechargeRatePerSec += effect.amount
+        break
+      case 'multi':
+        for (const e of effect.effects) this._applySkillEffect(e)
+        break
+    }
   }
 
   /**
