@@ -272,9 +272,11 @@ function DeathOverlay({ gameMgr }: { gameMgr: GameManager }) {
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: { top: '0px', left: '0px' },
-        width: '100%',
-        height: '100%',
+        // 4-corner constraint — Yoga computes full-screen size correctly.
+        // Do NOT use width:'100%'/height:'100%' here: Yoga resolves the background
+        // full-screen but treats the container as 0×0 for flex layout, so
+        // alignItems/justifyContent have nothing to center against.
+        position: { top: 0, left: 0, right: 0, bottom: 0 },
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
