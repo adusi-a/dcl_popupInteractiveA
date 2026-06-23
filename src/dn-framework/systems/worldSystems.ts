@@ -1,29 +1,31 @@
 /**
  * @file worldSystems.ts
  * @module DN DCL Framework / systems
- * @version 0.0001
+ * @version 0.0002
  * @status NEEDS_TEST
  *
  * World behavior ECS systems — registered ONCE via engine.addSystem().
  * Each system iterates a module-level registry of active behavior instances.
  *
  * SYSTEMS:
- *   FarmSystem        — ticks FarmPlotBehavior every ~1s; swaps GLBs on growth changes
- *   NPCMovementSystem — moves entities with MovementBehavior every frame
- *   EnemyAISystem     — drives enemy state machine (idle/chase/attack), handles death/respawn
+ *   FarmSystem              — ticks FarmPlotBehavior every ~1s; swaps GLBs on growth changes
+ *   NPCMovementSystem       — moves entities with MovementBehavior every frame
+ *   EnemyAISystem           — drives enemy state machine (idle/chase/attack), handles death/respawn
+ *   DamageZone+ShieldSystem — ticks damage zones + recharges player shield (Sprint 5)
  *
  * USAGE:
  *   1. Call initWorldSystems(gameMgr) once in GameManager constructor.
  *   2. Register entities via registerFarmPlot(), registerMovingEntity(), registerEnemyEntity()
  *      (called automatically by AreaManager at load time).
+ *   3. Register damage zones via registerDamageZone() (called by AreaManager for ZoneDef.damage).
  *
  * @changelog
- *   0.0001 - Initial. FarmSystem + NPCMovementSystem. Single-system DOP pattern
- *            (no per-entity engine.addSystem calls — the correct SDK7 approach).
+ *   0.0001 - Initial. FarmSystem + NPCMovementSystem. Single-system DOP pattern.
+ *   0.0002 - Sprint 5. Added DamageZone system + shield recharge system.
  */
 
 import { engine, Transform, GltfContainer } from '@dcl/sdk/ecs'
-import { Vector3 } from '@dcl/sdk/math'
+import { Vector3, Color4 } from '@dcl/sdk/math'
 import { FarmPlotBehavior, MovementBehavior, HealthBehavior, EnemyAIBehavior } from '../npcs/npcBehaviors'
 
 // ─── Farm System Registry ─────────────────────────────────────────────────────
@@ -85,6 +87,45 @@ export function registerEnemyEntity(
 /** Returns all currently alive (non-dead) enemy entries. Used by gameMgr.playerAttack(). */
 export function getLiveEnemies(): EnemyEntry[] {
   return _enemyEntities.filter(e => !e.health.dead)
+}
+
+// ─── Damage Zone System Registry ──────────────────────────────────────────────
+
+/**
+ * Runtime state for a damage zone registered with the DamageZone system.
+ * AreaManager gets back this object and sets isPlayerInside via trigger callbacks.
+ */
+export interface DamageZoneEntry {
+  damagePerTick:  number
+  tickIntervalMs: number
+  label?:         string
+  isPlayerInside: boolean
+  lastTickMs:     number
+}
+
+const _damageZones: DamageZoneEntry[] = []
+
+/**
+ * Register a damage zone with the DamageZone system.
+ * Returns the entry object — caller sets entry.isPlayerInside via onEnter/onExit callbacks.
+ *
+ * @param config  { damagePerTick, tickIntervalMs, label? }
+ * @returns       Mutable DamageZoneEntry — set isPlayerInside from TriggerZone callbacks
+ */
+export function registerDamageZone(config: {
+  damagePerTick:  number
+  tickIntervalMs: number
+  label?:         string
+}): DamageZoneEntry {
+  const entry: DamageZoneEntry = {
+    damagePerTick:  config.damagePerTick,
+    tickIntervalMs: config.tickIntervalMs,
+    label:          config.label,
+    isPlayerInside: false,
+    lastTickMs:     0,
+  }
+  _damageZones.push(entry)
+  return entry
 }
 
 // ─── Init (call once from GameManager) ────────────────────────────────────────
@@ -160,6 +201,34 @@ export function initWorldSystems(gameMgr: any): void {
 
       // Run AI update
       entry.ai.update(t.position, playerPos, entry.entityId, entry.health, gameMgr, dt)
+    }
+  })
+
+  // ── Damage Zone Tick + Shield Recharge System (every frame) ──────────────────
+  engine.addSystem((dt: number) => {
+    const now = Date.now()
+
+    // Damage zone ticks — deal periodic damage while player is inside a hazard zone
+    for (const zone of _damageZones) {
+      if (!zone.isPlayerInside) continue
+      if (gameMgr.playerDead) continue
+      if (now - zone.lastTickMs < zone.tickIntervalMs) continue
+      zone.lastTickMs = now
+      gameMgr.takeDamage(zone.damagePerTick)
+      if (zone.label) {
+        popupMgr.showFloat(zone.label, Color4.create(1, 0.35, 0.05, 1), 1200)
+      }
+    }
+
+    // Shield recharge — starts after rechargeDelayMs of not taking damage
+    const shield = gameMgr.playerShield
+    if (
+      shield && shield.max > 0 &&
+      shield.current < shield.max &&
+      !gameMgr.playerDead &&
+      (now - shield.lastDamagedAt) > shield.rechargeDelayMs
+    ) {
+      shield.current = Math.min(shield.max, shield.current + shield.rechargeRatePerSec * dt)
     }
   })
 }
