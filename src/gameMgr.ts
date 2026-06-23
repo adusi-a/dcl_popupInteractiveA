@@ -40,7 +40,7 @@ import { DataManager } from './dn-framework/data/dataManager'
 import { AreaManager } from './dn-framework/data/areaManager'
 import { setupInteractionUiSystem } from './dn-framework/ui/systems/interactionUiSystem'
 import { initWorldSystems, getLiveEnemies } from './dn-framework/systems/worldSystems'
-import { Color4 } from '@dcl/sdk/math'
+import { Color4, Vector3 } from '@dcl/sdk/math'
 import { Transform, engine } from '@dcl/sdk/ecs'
 
 // Global data registries
@@ -72,6 +72,23 @@ export class GameManager {
   // ── Player HP ──────────────────────────────────────────────────────────────
   playerHP: { current: number; max: number }
 
+  // ── Player Shield (Sprint 5) ───────────────────────────────────────────────
+  /**
+   * Shield absorbs damage before HP. Recharges after rechargeDelayMs without taking damage.
+   * max starts at 0 (no shield) — set by equipping an offhand item with { shield: N } stats.
+   */
+  playerShield: {
+    current:           number
+    max:               number
+    rechargeRatePerSec: number   // shield points restored per second
+    rechargeDelayMs:   number   // ms after last hit before recharge starts
+    lastDamagedAt:     number   // Date.now() timestamp of last damage
+  }
+
+  // ── Death state (Sprint 5) ─────────────────────────────────────────────────
+  /** True while the player is in the death screen. Clears on respawn. */
+  playerDead: boolean
+
   // ── Equipment ─────────────────────────────────────────────────────────────
   equipment: Map<'weapon' | 'offhand' | 'accessory', { itemId: string; name: string; stats: Record<string, number> } | null>
 
@@ -95,6 +112,8 @@ export class GameManager {
     // ── Core managers ─────────────────────────────────────────────────────────
     this.flags           = new Map()
     this.playerHP        = { current: 100, max: 100 }
+    this.playerShield    = { current: 0, max: 0, rechargeRatePerSec: 15, rechargeDelayMs: 4000, lastDamagedAt: 0 }
+    this.playerDead      = false
     this.equipment       = new Map([['weapon', null], ['offhand', null], ['accessory', null]])
     this.playerMgr       = new PlayerManager(this)
     this.playerInventory = new PlayerInventory()
@@ -164,8 +183,23 @@ export class GameManager {
     stats: Record<string, number>
   ): void {
     this.equipment.set(slot, { itemId, name, stats })
-    const statStr = Object.entries(stats).map(([k, v]) => `+${v} ${k}`).join(', ')
-    this.popupMgr.showFloat(`Equipped: ${name}  (${statStr})`, Color4.create(0.6, 0.9, 1, 1), 2500)
+    const statStr = Object.entries(stats)
+      .filter(([k]) => k !== 'shield')           // shield shown separately
+      .map(([k, v]) => `+${v} ${k}`).join(', ')
+    const shieldGain = stats['shield'] ?? 0
+    const floatMsg = shieldGain > 0
+      ? `Equipped: ${name}  (${statStr}${statStr ? ', ' : ''}🛡 +${shieldGain} Shield)`
+      : `Equipped: ${name}${statStr ? `  (${statStr})` : ''}`
+    this.popupMgr.showFloat(floatMsg, Color4.create(0.6, 0.9, 1, 1), 2500)
+
+    // Update shield pool if item grants shield points
+    const newShieldMax = this.getEffectiveStat('shield')
+    if (newShieldMax !== this.playerShield.max) {
+      this.playerShield.max = newShieldMax
+      // Fully restore shield on equip (feels good)
+      this.playerShield.current = newShieldMax
+      this.playerShield.lastDamagedAt = 0
+    }
   }
 
   unequipItem(slot: 'weapon' | 'offhand' | 'accessory'): void {
@@ -188,14 +222,61 @@ export class GameManager {
   // ── Combat ──────────────────────────────────────────────────────────────────
 
   /**
-   * Take damage from an enemy attack.
-   * Applies effective defense reduction, clamps HP to minimum 1 (no player death yet).
+   * Take damage from any source (enemy attack or damage zone).
+   * Order: dead guard → defense reduction → shield absorption → HP → death check.
    */
   takeDamage(rawAmount: number): void {
+    if (this.playerDead) return
+
+    // Record hit time — used by shield recharge delay
+    this.playerShield.lastDamagedAt = Date.now()
+
     const defense = this.getEffectiveStat('defense')
-    const damage  = Math.max(1, rawAmount - defense)
-    this.playerHP.current = Math.max(1, this.playerHP.current - damage)
+    let damage    = Math.max(1, rawAmount - defense)
+
+    // Shield absorbs damage first
+    if (this.playerShield.current > 0) {
+      const absorbed = Math.min(this.playerShield.current, damage)
+      this.playerShield.current -= absorbed
+      damage -= absorbed
+      if (damage <= 0) {
+        this.popupMgr.showFloat(`🛡 absorbed`, Color4.create(0.4, 0.65, 1, 1), 1200)
+        return
+      }
+    }
+
+    // Remaining damage hits HP
+    this.playerHP.current -= damage
     this.popupMgr.showFloat(`-${damage} HP`, Color4.create(1, 0.2, 0.2, 1), 1500)
+
+    if (this.playerHP.current <= 0) {
+      this.playerHP.current = 0
+      this._onPlayerDeath()
+    }
+  }
+
+  /** @private Called when HP reaches 0. Sets dead flag. */
+  private _onPlayerDeath(): void {
+    this.playerDead = true
+    console.error('[GameManager] Player died.')
+  }
+
+  /**
+   * Respawn the player — called from the death screen Respawn button.
+   * Resets HP + shield, clears dead flag, teleports back to scene spawn.
+   */
+  respawnPlayer(): void {
+    this.playerDead              = false
+    this.playerHP.current        = this.playerHP.max
+    if (this.playerShield.max > 0) {
+      this.playerShield.current  = this.playerShield.max
+    }
+    this.playerShield.lastDamagedAt = 0
+    // Teleport to scene spawn point
+    this.playerMgr.teleportTo(
+      Vector3.create(80, 1, 70),
+      Vector3.create(80, 2, 100)
+    )
   }
 
   /**
