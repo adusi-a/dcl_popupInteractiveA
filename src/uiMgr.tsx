@@ -10,7 +10,14 @@
  *   NoticeBoardModule        — static text/signs
  *   InteractivePopupModule   — adaptive behavior-driven (Craft/Refine/Buy/Sell/Missions/Talk)
  *
- * Side panel: PlayerHud (gold + fishing_xp + inventory items)
+ * HUD elements:
+ *   MissionTrackerModule     — top-left always-visible active quest tracker (Sprint 5)
+ *   PlayerHud                — right-side panel: HP bar, shield bar, stats, gold, inventory
+ *   AttackButton             — bottom-right attack trigger
+ *   HintPanel                — bottom-center key hint
+ *
+ * Full-screen overlays:
+ *   DeathOverlay             — shown when playerDead === true, blocks all input (Sprint 5)
  *
  * NOTE: CraftingPopupModule removed — Smelter/Workbench/Trader/Fishmonger
  *       now use InteractivePopupModule via their behavior tabs.
@@ -48,10 +55,76 @@ export function uiSetup(gameMgr: GameManager): void {
       gameMgr:   gameMgr,
     }),
 
+    MissionTrackerModule({ gameMgr }),
     PlayerHud({ gameMgr }),
     AttackButton({ gameMgr }),
     HintPanel(),
+
+    // Death overlay — rendered last so it sits on top of everything
+    DeathOverlay({ gameMgr }),
   ])
+}
+
+// ─── Mission Tracker ───────────────────────────────────────────────────────────
+// Sprint 5: always-visible top-left HUD showing active quest progress.
+
+function MissionTrackerModule({ gameMgr }: { gameMgr: GameManager }) {
+  const activeQuests    = gameMgr.questMgr.getActiveQuests()
+  const completable     = gameMgr.questMgr.getCompletableQuests()
+  const allShown        = [...activeQuests, ...completable]
+
+  if (allShown.length === 0) {
+    return <UiEntity uiTransform={{ width: 0, height: 0 }} />
+  }
+
+  const CLR_HEADER = Color4.create(0.65, 0.60, 0.50, 1)
+  const CLR_TITLE  = Color4.create(1,    0.88, 0.35, 1)   // gold
+  const CLR_DESC   = Color4.create(0.85, 0.85, 0.90, 1)
+  const CLR_DONE   = Color4.create(0.35, 1,    0.45, 1)   // green when completable
+
+  return (
+    <UiEntity
+      uiTransform={{
+        positionType: 'absolute',
+        position: { top: '16px', left: '16px' },
+        width: 290,
+        flexDirection: 'column',
+        padding: { top: 10, left: 12, right: 12, bottom: 10 },
+      }}
+      uiBackground={{ color: Color4.create(0.04, 0.06, 0.12, 0.80) }}
+    >
+      <Label
+        value="— Quests —"
+        fontSize={12}
+        color={CLR_HEADER}
+        uiTransform={{ margin: { bottom: 7 } }}
+      />
+      {allShown.map((quest, idx) => {
+        const isComplete = quest.status === 'complete'
+        const desc = isComplete
+          ? '✓ Return to quest giver'
+          : gameMgr.questMgr.getCurrentPhaseDescription(quest.definition.id)
+        return (
+          <UiEntity
+            key={idx.toString()}
+            uiTransform={{ width: '100%', flexDirection: 'column', margin: { bottom: 8 } }}
+          >
+            <Label
+              value={quest.definition.title}
+              fontSize={13}
+              color={isComplete ? CLR_DONE : CLR_TITLE}
+            />
+            <Label
+              value={desc}
+              fontSize={11}
+              color={isComplete ? CLR_DONE : CLR_DESC}
+              uiTransform={{ margin: { top: 2 } }}
+            />
+          </UiEntity>
+        )
+      })}
+    </UiEntity>
+  )
 }
 
 // ─── Player HUD ───────────────────────────────────────────────────────────────
@@ -62,13 +135,16 @@ function PlayerHud({ gameMgr }: { gameMgr: GameManager }) {
   const gold    = inv.getCurrency('gold')
   const fishXp  = inv.getStat('fishing_xp')
   const hp      = gameMgr.playerHP
+  const shield  = gameMgr.playerShield
   const hpPct   = Math.max(0, Math.min(1, hp.current / hp.max))
+  const shPct   = shield.max > 0 ? Math.max(0, Math.min(1, shield.current / shield.max)) : 0
 
-  const CLR_SEC  = Color4.create(0.8,  0.75, 0.5,  1)
-  const CLR_GLD  = Color4.create(1,    0.85, 0.1,  1)
-  const CLR_XP   = Color4.create(0.5,  0.88, 0.35, 1)
-  const CLR_MUT  = Color4.create(0.5,  0.5,  0.55, 1)
-  const CLR_HP   = hpPct > 0.5
+  const CLR_SEC    = Color4.create(0.8,  0.75, 0.5,  1)
+  const CLR_GLD    = Color4.create(1,    0.85, 0.1,  1)
+  const CLR_XP     = Color4.create(0.5,  0.88, 0.35, 1)
+  const CLR_MUT    = Color4.create(0.5,  0.5,  0.55, 1)
+  const CLR_SHIELD = Color4.create(0.30, 0.55, 1.00, 1)
+  const CLR_HP     = hpPct > 0.5
     ? Color4.create(0.3, 0.85, 0.3, 1)
     : hpPct > 0.25
     ? Color4.create(0.9, 0.7,  0.1, 1)
@@ -85,6 +161,19 @@ function PlayerHud({ gameMgr }: { gameMgr: GameManager }) {
       uiTransform={{ positionType: 'absolute', position: { top: '220px', right: '16px' }, width: 220, flexDirection: 'column', alignItems: 'flex-start', padding: { top: 10, left: 12, right: 12, bottom: 12 } }}
       uiBackground={{ color: Color4.create(0.04, 0.06, 0.12, 0.82) }}
     >
+      {/* Shield bar — only shown when max shield > 0 */}
+      {shield.max > 0 && (
+        <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', margin: { bottom: 6 } }}>
+          <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', margin: { bottom: 3 } }}>
+            <Label value="🛡 Shield" fontSize={12} color={CLR_SHIELD} />
+            <Label value={`${Math.ceil(shield.current)} / ${shield.max}`} fontSize={12} color={CLR_SHIELD} />
+          </UiEntity>
+          <UiEntity uiTransform={{ width: '100%', height: 7, margin: { bottom: 4 } }} uiBackground={{ color: Color4.create(0.08, 0.10, 0.22, 1) }}>
+            <UiEntity uiTransform={{ width: `${Math.round(shPct * 100)}%`, height: '100%' }} uiBackground={{ color: CLR_SHIELD }} />
+          </UiEntity>
+        </UiEntity>
+      )}
+
       {/* HP bar */}
       <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', margin: { bottom: 4 } }}>
         <Label value="HP" fontSize={12} color={CLR_SEC} />
@@ -136,6 +225,9 @@ function PlayerHud({ gameMgr }: { gameMgr: GameManager }) {
 // ─── Attack Button ────────────────────────────────────────────────────────────
 
 function AttackButton({ gameMgr }: { gameMgr: GameManager }) {
+  // Hidden during death state
+  if (gameMgr.playerDead) return <UiEntity uiTransform={{ width: 0, height: 0 }} />
+
   return (
     <UiEntity
       uiTransform={{
@@ -165,6 +257,51 @@ function HintPanel() {
       uiBackground={{ color: Color4.create(0, 0, 0, 0.5) }}
     >
       <Label value="[E] Interact / Mine / Craft / Smelt / Fish   [X] Close" fontSize={13} color={Color4.create(0.7, 0.7, 0.75, 1)} textAlign="middle-center" />
+    </UiEntity>
+  )
+}
+
+// ─── Death Overlay ────────────────────────────────────────────────────────────
+// Sprint 5: Full-screen overlay shown when playerDead === true.
+// Covers all other UI elements — rendered last in the stack.
+
+function DeathOverlay({ gameMgr }: { gameMgr: GameManager }) {
+  if (!gameMgr.playerDead) return <UiEntity uiTransform={{ width: 0, height: 0 }} />
+
+  return (
+    <UiEntity
+      uiTransform={{
+        positionType: 'absolute',
+        position: { top: '0px', left: '0px' },
+        width: '100%',
+        height: '100%',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      uiBackground={{ color: Color4.create(0.30, 0, 0, 0.88) }}
+    >
+      <Label
+        value="YOU DIED"
+        fontSize={60}
+        color={Color4.create(0.92, 0.08, 0.08, 1)}
+        uiTransform={{ margin: { bottom: 16 } }}
+        textAlign="middle-center"
+      />
+      <Label
+        value="Return to spawn and recover"
+        fontSize={16}
+        color={Color4.create(0.80, 0.65, 0.65, 1)}
+        uiTransform={{ margin: { bottom: 36 } }}
+        textAlign="middle-center"
+      />
+      <Button
+        value="RESPAWN"
+        fontSize={20}
+        uiTransform={{ width: 190, height: 60 }}
+        uiBackground={{ color: Color4.create(0.22, 0.06, 0.06, 1) }}
+        onMouseDown={() => gameMgr.respawnPlayer()}
+      />
     </UiEntity>
   )
 }
