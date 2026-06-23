@@ -456,7 +456,7 @@ export const AREA_POPUP_TEST: AreaDefinition = {
                 {
                   text: 'Equip my Shield.',
                   condition: { type: 'hasItem', key: 'shield', value: 1 },
-                  sideEffect: { type: 'equipItem', slot: 'offhand', key: 'shield', name: 'Shield', value: { defense: 5 } },
+                  sideEffect: { type: 'equipItem', slot: 'offhand', key: 'shield', name: 'Shield', value: { defense: 5, shield: 80 } },
                   nextNodeId: 'equipped_shield'
                 },
                 { text: 'Nothing yet. Farewell.' }
@@ -471,7 +471,7 @@ export const AREA_POPUP_TEST: AreaDefinition = {
             {
               id: 'equipped_shield',
               speaker: 'Armorer',
-              text: 'Solid work — +5 Defense. Those goblins will barely scratch you now.',
+              text: 'Solid work — +5 Defense and 80 Shield points. Hits drain the shield first. When you stop taking damage, it recharges on its own.',
               choices: [{ text: 'Good to know.' }]
             }
           ]
@@ -587,8 +587,23 @@ export const AREA_POPUP_TEST: AreaDefinition = {
   ],
 
   zones: [
-    // Example zone — add real zones as the scene grows
-    // { id: 'spawn_area', pos: [80, 1, 70], scale: [20, 4, 20], onEnter: 'onEnterSpawnZone' }
+
+    // ─── Lava Pit (DamageZoneBehavior test) — Sprint 5 ──────────────────────
+    // Placed in the goblin area (east of ore veins, around Z=48).
+    // Player takes 8 damage every 1.5s while inside; shield absorbs first.
+    // debug: true shows a visible red box — useful for testing, remove for prod.
+    {
+      id: 'goblin_lava_pit',
+      pos: [105, 0.5, 48],
+      scale: [20, 4, 20],
+      debug: true,
+      damage: {
+        damagePerTick: 8,
+        tickIntervalMs: 1500,
+        label: '🔥 Lava!',
+      }
+    },
+
   ]
 
 }
