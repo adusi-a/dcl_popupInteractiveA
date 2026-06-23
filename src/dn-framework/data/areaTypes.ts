@@ -303,6 +303,7 @@ export type EntityDef =
 /**
  * A 3D trigger box within an area — no load/unload.
  * When player enters/exits, named callbacks fire on GameManager.
+ * Optional damage config turns this into a hazard zone (lava, poison, fall-damage, etc.).
  */
 export interface ZoneDef {
   id: string
@@ -314,6 +315,21 @@ export interface ZoneDef {
   onExit?: string
   /** Show a visible debug box (for development). Default false. */
   debug?: boolean
+  /**
+   * If set, this zone deals periodic damage to the player while inside.
+   * Shield absorbs damage first; remaining bleeds to HP.
+   *
+   * @example Lava floor: { damagePerTick: 10, tickIntervalMs: 1000, label: '🔥 Lava!' }
+   * @example Poison gas: { damagePerTick: 3,  tickIntervalMs: 500,  label: '☠ Poison' }
+   */
+  damage?: {
+    /** Raw damage per tick (defense reduction + shield absorption applied). */
+    damagePerTick: number
+    /** Milliseconds between damage ticks. */
+    tickIntervalMs: number
+    /** Float notification text shown each tick. Omit for silent damage. */
+    label?: string
+  }
 }
 
 // ─── Area definition ──────────────────────────────────────────────────────────
