@@ -86,7 +86,9 @@ function MissionTrackerModule({ gameMgr }: { gameMgr: GameManager }) {
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: { top: '16px', left: '16px' },
+        // Left matches CoordsModule (left: 410px) so it clears the DCL native UI.
+        // Top: CoordsModule is top:10 + height:55 = bottom at 65px; 80px gives a clean gap.
+        position: { top: '80px', left: '410px' },
         width: 290,
         flexDirection: 'column',
         padding: { top: 10, left: 12, right: 12, bottom: 10 },
