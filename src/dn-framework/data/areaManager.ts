@@ -514,10 +514,13 @@ export class AreaManager {
     MeshCollider.setBox(e)
     Material.setPbrMaterial(e, { albedoColor: color })
 
-    // Billboard label
+    // Billboard label — parented to enemy entity so it follows during chase
     if (def.label) {
       const label = engine.addEntity()
-      Transform.create(label, { position: Vector3.create(pos.x, pos.y + scale.y * 0.5 + 0.8, pos.z) })
+      Transform.create(label, {
+        parent: e,
+        position: Vector3.create(0, scale.y * 0.5 + 0.8, 0),  // local offset above center
+      })
       TextShape.create(label, {
         text: def.label,
         fontSize: 2.0,
