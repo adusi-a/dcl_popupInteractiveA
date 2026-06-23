@@ -868,6 +868,8 @@ export interface HealthBehaviorDef {
   defense?: number
   /** Respawn delay in ms after death. 0 = no respawn (permanent). Default 0. */
   respawnMs?: number
+  /** XP awarded to the player on death. Default 0. */
+  xpReward?: number
 }
 
 export class HealthBehavior {
@@ -879,6 +881,7 @@ export class HealthBehavior {
   lootDrops: GiverDrop[]
   defense:   number
   respawnMs: number
+  xpReward:  number
 
   dead: boolean    = false
   /** Date.now() + respawnMs set when entity dies. 0 = not scheduled. */
@@ -892,6 +895,7 @@ export class HealthBehavior {
     this.lootDrops = def.lootDrops ?? []
     this.defense   = def.defense   ?? 0
     this.respawnMs = def.respawnMs ?? 0
+    this.xpReward  = def.xpReward  ?? 0
   }
 
   /**
@@ -921,6 +925,10 @@ export class HealthBehavior {
       if (drop.isCurrency) gameMgr.playerInventory.addCurrency(drop.quantity, drop.itemId)
       else                 gameMgr.playerInventory.addItem(drop.itemId, drop.name, drop.quantity)
       gameMgr.popupMgr.showFloat(`+${drop.quantity} ${drop.name}`, Color4.create(1, 0.9, 0.3, 1), 2000)
+    }
+    // Award XP to player
+    if (this.xpReward > 0 && typeof gameMgr.addXP === 'function') {
+      gameMgr.addXP(this.xpReward)
     }
     // Report kill to quest system (triggers goblin_bounty etc.)
     gameMgr.questMgr.reportKill(entityId, this.tags)
