@@ -28,6 +28,8 @@ import { NoticeBoardModule } from './dn-framework/ui/modules/noticeBoardModule'
 import { InteractivePopupModule } from './dn-framework/ui/modules/npcPopupModule'
 
 export function uiSetup(gameMgr: GameManager): void {
+  // virtualWidth/virtualHeight required since SDK 7.26.0 removed the default virtual screen.
+  // Without these, UI sizes are interpreted as raw pixels and break at non-1080p resolutions.
   ReactEcsRenderer.setUiRenderer(() => [
     CoordsModule(gameMgr),
     PlayerInfoModule(gameMgr),
@@ -55,7 +57,7 @@ export function uiSetup(gameMgr: GameManager): void {
     // Overlays — rendered last (topmost)
     PauseMenuModule({ gameMgr }),
     DeathOverlay({ gameMgr }),
-  ])
+  ], { virtualWidth: 1920, virtualHeight: 1080 })
 }
 
 // ─── Shared palette ────────────────────────────────────────────────────────────
