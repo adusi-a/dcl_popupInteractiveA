@@ -608,7 +608,7 @@ export const AREA_POPUP_TEST: AreaDefinition = {
       id: 'goblin_lava_pit',
       pos: [105, 0.5, 48],
       scale: [20, 4, 20],
-      debug: true,
+      debug: false,
       damage: {
         damagePerTick: 8,
         tickIntervalMs: 1500,
