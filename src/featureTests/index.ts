@@ -17,7 +17,7 @@
  * See /FEATURE_TEST_TODO.md for complete asset + control checklist.
  */
 
-import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance } from './testUtils'
+import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance, createSWZoneEntrance } from './testUtils'
 import { setupMLNodeWalker }     from './ml_nodeWalker'
 import { setupMLShelfGhost }     from './ml_shelfGhost'
 import { setupMLWanderingEnemy } from './ml_wanderingEnemy'
@@ -31,6 +31,11 @@ import { setupHZDisappearFloor }             from './hz_disappearFloor'
 import { setupHZBombThrower }                from './hz_bombThrower'
 import { setupHZTurret, setupHZLaserTurret } from './hz_turret'
 import { setupHZThwomp }                     from './hz_thwomp'
+// Switch / Door / Pickup Zone
+import { setupSWPressurePlate, setupSWToggleLever }   from './sw_pressurePlate'
+import { setupSWDoor, setupSWKeyLock }               from './sw_doors'
+import { setupSWCheckpoint, setupSWCollectibles }     from './sw_checkpoint'
+import { setupSWTeleporter, setupSWMovingBridge, setupSWWeightPlatform } from './sw_teleporter'
 import { setupPhysicsTest }   from './t1_physics'
 import { setupParticlesTest } from './t2_particles'
 import { setupCameraTest }    from './t3_camera'
@@ -86,6 +91,21 @@ export function setupFeatureTests(): void {
   try { setupHZThwomp() }        catch (e) { console.error('[HZ9] Thwomp failed:', e) }
 
   console.log('=== HAZARD ZONE ready — Z=118-138 ===')
+
+  // ─── Switch / Door / Pickup Zone (WEST SIDE: X=8-72, Z=22-50) ──────────────
+  createSWZoneEntrance()
+  console.log('=== SWITCH ZONE initializing (X=8-72, Z=22-50) ===')
+  try { setupSWPressurePlate() }   catch (e) { console.error('[SW1] PressurePlate failed:', e) }
+  try { setupSWToggleLever() }     catch (e) { console.error('[SW2] ToggleLever failed:', e) }
+  try { setupSWDoor() }            catch (e) { console.error('[SW3] Door failed:', e) }
+  try { setupSWKeyLock() }         catch (e) { console.error('[SW4] KeyLock failed:', e) }
+  try { setupSWCheckpoint() }      catch (e) { console.error('[SW5] Checkpoint failed:', e) }
+  try { setupSWCollectibles() }    catch (e) { console.error('[SW6] Collectibles failed:', e) }
+  try { setupSWTeleporter() }      catch (e) { console.error('[SW7] Teleporter failed:', e) }
+  try { setupSWMovingBridge() }    catch (e) { console.error('[SW8] MovingBridge failed:', e) }
+  try { setupSWWeightPlatform() }  catch (e) { console.error('[SW9] WeightPlatform failed:', e) }
+
+  console.log('=== SWITCH ZONE ready — X=8-72, Z=22-50 ===')
 }
 
 /*
