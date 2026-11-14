@@ -83,6 +83,25 @@ export const STATION_POSITIONS: Record<string, { x: number; z: number }> = {
   cb7_stun:     { x: 28, z: 154 },
   cb8_loot:     { x: 40, z: 154 },
   cb9_shield:   { x: 52, z: 154 },
+  // Event Chain Zone (between FTZ Z=50 and ML Z=78)
+  ev1_eventbus: { x: 96,  z: 58 },
+  ev2_chain:    { x: 108, z: 58 },
+  ev3_and:      { x: 120, z: 58 },
+  ev4_orNot:    { x: 132, z: 58 },
+  ev5_flipflop: { x: 144, z: 58 },
+  ev6_ratelimit:{ x: 96,  z: 70 },
+  ev7_pulse:    { x: 108, z: 70 },
+  ev8_oneshot:  { x: 120, z: 70 },
+  // Audio Zone (south of HZ Z=138)
+  au1_basic:    { x: 96,  z: 144 },
+  au2_spatial:  { x: 108, z: 144 },
+  au3_ambient:  { x: 120, z: 144 },
+  au4_state:    { x: 132, z: 144 },
+  au5_layered:  { x: 144, z: 144 },
+  au6_crossfade:{ x: 96,  z: 156 },
+  au7_zone:     { x: 108, z: 156 },
+  au8_reactive: { x: 120, z: 156 },
+  au9_pool:     { x: 132, z: 156 },
 }
 
 /** Status colors for platform tops */
@@ -173,6 +192,14 @@ export function createButton(
   return btn
 }
 
+export function createEVZoneEntrance(): void {
+  const e = engine.addEntity(); Transform.create(e, { position: Vector3.create(120, 5, 54) }); Billboard.create(e, {})
+  TextShape.create(e, { text: '⚡ EVENT CHAIN • LOGIC ZONE\nEvent Bus  Chains  AND/OR/NOT\nFlip-Flop  Rate Limit  Pulse  One-Shot', fontSize: 2.3, textColor: Color4.create(0.5, 1, 0.9, 1), outlineColor: Color4.Black(), outlineWidth: 0.14 })
+}
+export function createAUZoneEntrance(): void {
+  const e = engine.addEntity(); Transform.create(e, { position: Vector3.create(120, 5, 140) }); Billboard.create(e, {})
+  TextShape.create(e, { text: '🎵 AUDIO SYSTEMS ZONE\nBasic  Spatial  Ambient  States\nLayered  Crossfade  Reactive  Pool', fontSize: 2.3, textColor: Color4.create(0.9, 0.7, 1, 1), outlineColor: Color4.Black(), outlineWidth: 0.14 })
+}
 export function createFBZoneEntrance(): void {
   const e = engine.addEntity(); Transform.create(e, { position: Vector3.create(40, 5, 102) }); Billboard.create(e, {})
   TextShape.create(e, { text: '📸 FEEDBACK • HUD ZONE\nShake  Numbers  Flash  Score\nTimer  Objectives  Alert  Death', fontSize: 2.4, textColor: Color4.create(0.9, 1, 0.5, 1), outlineColor: Color4.Black(), outlineWidth: 0.14 })
