@@ -17,7 +17,7 @@
  * See /FEATURE_TEST_TODO.md for complete asset + control checklist.
  */
 
-import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance, createSWZoneEntrance, createPMZoneEntrance, createFBZoneEntrance, createCBZoneEntrance } from './testUtils'
+import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance, createSWZoneEntrance, createPMZoneEntrance, createFBZoneEntrance, createCBZoneEntrance, createEVZoneEntrance, createAUZoneEntrance } from './testUtils'
 import { setupMLNodeWalker }     from './ml_nodeWalker'
 import { setupMLShelfGhost }     from './ml_shelfGhost'
 import { setupMLWanderingEnemy } from './ml_wanderingEnemy'
@@ -49,6 +49,14 @@ import { setupFBDeathSequence, setupFBMinimapBlips }                      from '
 import { setupCBHpEntity, setupCBProximityMine }                          from './cb_hpMine'
 import { setupCBHoming, setupCBMeleeSwing, setupCBRespawning }            from './cb_projectileEnemy'
 import { setupCBBeamGate, setupCBStunZone, setupCBLootDrop, setupCBShield } from './cb_gateStunLoot'
+// Event Chain Zone (E)
+import { setupEVEventBus, setupEVChain }                        from './ev_eventBus'
+import { setupEVAndGate, setupEVOrNot, setupEVFlipFlop }        from './ev_logicGates'
+import { setupEVRateLimiter, setupEVPulse, setupEVOneShot }     from './ev_timing'
+// Audio Systems Zone (F)
+import { setupAUBasic, setupAUSpatial, setupAUAmbientZone }     from './au_basicAudio'
+import { setupAUSoundState, setupAULayered, setupAUCrossfade }  from './au_advancedAudio'
+import { setupAUZoneAudio, setupAUReactive, setupAUPool }       from './au_reactiveAudio'
 import { setupPhysicsTest }   from './t1_physics'
 import { setupParticlesTest } from './t2_particles'
 import { setupCameraTest }    from './t3_camera'
@@ -162,6 +170,33 @@ export function setupFeatureTests(): void {
   try { setupCBLootDrop() }     catch (e) { console.error('[CB8] failed:', e) }
   try { setupCBShield() }       catch (e) { console.error('[CB9] failed:', e) }
   console.log('=== COMBAT ZONE ready ===')
+
+  // ─── Event Chain Zone (Z=58-70, east side) ───────────────────────
+  createEVZoneEntrance()
+  console.log('=== EVENT ZONE initializing (Z=58-70) ===')
+  try { setupEVEventBus() }     catch (e) { console.error('[EV1] failed:', e) }
+  try { setupEVChain() }         catch (e) { console.error('[EV2] failed:', e) }
+  try { setupEVAndGate() }       catch (e) { console.error('[EV3] failed:', e) }
+  try { setupEVOrNot() }         catch (e) { console.error('[EV4] failed:', e) }
+  try { setupEVFlipFlop() }      catch (e) { console.error('[EV5] failed:', e) }
+  try { setupEVRateLimiter() }   catch (e) { console.error('[EV6] failed:', e) }
+  try { setupEVPulse() }         catch (e) { console.error('[EV7] failed:', e) }
+  try { setupEVOneShot() }       catch (e) { console.error('[EV8] failed:', e) }
+  console.log('=== EVENT ZONE ready ===')
+
+  // ─── Audio Systems Zone (Z=144-156, east side) ─────────────────
+  createAUZoneEntrance()
+  console.log('=== AUDIO ZONE initializing (Z=144-156) ===')
+  try { setupAUBasic() }         catch (e) { console.error('[AU1] failed:', e) }
+  try { setupAUSpatial() }       catch (e) { console.error('[AU2] failed:', e) }
+  try { setupAUAmbientZone() }   catch (e) { console.error('[AU3] failed:', e) }
+  try { setupAUSoundState() }    catch (e) { console.error('[AU4] failed:', e) }
+  try { setupAULayered() }       catch (e) { console.error('[AU5] failed:', e) }
+  try { setupAUCrossfade() }     catch (e) { console.error('[AU6] failed:', e) }
+  try { setupAUZoneAudio() }     catch (e) { console.error('[AU7] failed:', e) }
+  try { setupAUReactive() }      catch (e) { console.error('[AU8] failed:', e) }
+  try { setupAUPool() }          catch (e) { console.error('[AU9] failed:', e) }
+  console.log('=== AUDIO ZONE ready ===')
 }
 
 /*
