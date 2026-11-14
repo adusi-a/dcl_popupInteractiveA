@@ -17,7 +17,13 @@
  * See /FEATURE_TEST_TODO.md for complete asset + control checklist.
  */
 
-import { createZoneEntrance } from './testUtils'
+import { createZoneEntrance, createMLZoneEntrance } from './testUtils'
+import { setupMLNodeWalker }     from './ml_nodeWalker'
+import { setupMLShelfGhost }     from './ml_shelfGhost'
+import { setupMLWanderingEnemy } from './ml_wanderingEnemy'
+import { setupMLHoldInteract }   from './ml_holdInteract'
+import { setupMLPathDistance }   from './ml_pathDistance'
+import { setupMLMinimap }        from './ml_minimap'
 import { setupPhysicsTest }   from './t1_physics'
 import { setupParticlesTest } from './t2_particles'
 import { setupCameraTest }    from './t3_camera'
@@ -46,7 +52,18 @@ export function setupFeatureTests(): void {
   try { setupFontsTest() }     catch (e) { console.error('[FTZ] T9 Fonts failed:', e) }
   try { setupNFTTest() }       catch (e) { console.error('[FTZ] T10 NFT failed:', e) }
 
-  console.log('=== FEATURE TEST ZONE ready — walk to X=88-155, Z=8-70 ===')
+  // ─── MonsterLibrary Prototype Zone (Z=78-104) ─────────────────────────────
+  createMLZoneEntrance()
+  console.log('=== MONSTER LIBRARY PROTOTYPES initializing (Z=78-104) ===')
+  try { setupMLNodeWalker() }     catch (e) { console.error('[ML1] NodeWalker failed:', e) }
+  try { setupMLShelfGhost() }     catch (e) { console.error('[ML2] ShelfGhost failed:', e) }
+  try { setupMLWanderingEnemy() } catch (e) { console.error('[ML3] WanderingEnemy failed:', e) }
+  try { setupMLHoldInteract() }   catch (e) { console.error('[ML4] HoldInteract failed:', e) }
+  try { setupMLPathDistance() }   catch (e) { console.error('[ML5] PathDistance failed:', e) }
+  try { setupMLMinimap() }        catch (e) { console.error('[ML6] Minimap failed:', e) }
+
+  console.log('=== FEATURE TEST ZONE ready — walk to X=88-155, Z=8-104 ===')
+  console.log('=== MONSTER LIBRARY PROTOTYPES — Z=78-104 ===')
 }
 
 /*
