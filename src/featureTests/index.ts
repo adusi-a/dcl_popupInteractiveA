@@ -17,7 +17,7 @@
  * See /FEATURE_TEST_TODO.md for complete asset + control checklist.
  */
 
-import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance, createSWZoneEntrance, createPMZoneEntrance, createFBZoneEntrance, createCBZoneEntrance, createEVZoneEntrance, createAUZoneEntrance, createPZZoneEntrance, createPSZoneEntrance } from './testUtils'
+import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance, createSWZoneEntrance, createPMZoneEntrance, createFBZoneEntrance, createCBZoneEntrance, createEVZoneEntrance, createAUZoneEntrance, createPZZoneEntrance, createPSZoneEntrance, createTAZoneEntrance } from './testUtils'
 import { setupMLNodeWalker }     from './ml_nodeWalker'
 import { setupMLShelfGhost }     from './ml_shelfGhost'
 import { setupMLWanderingEnemy } from './ml_wanderingEnemy'
@@ -61,6 +61,7 @@ import { setupAUZoneAudio, setupAUReactive, setupAUPool }       from './au_react
 import { setupPZTrampoline, setupPZAntiGrav, setupPZRepulsor, setupPZAttractor, setupPZSpeedPad } from './pz_powerZones'
 // Persistence & Multiplayer (H)
 import { setupPSStorageWrite, setupPSStorageRead, setupPSCrossSessionCounter, setupPSMessageBus, setupPSPlayerEvents } from './ps_persistence'
+import { setupTALerpMove, setupTARotLoop, setupTAPulse, setupTAWaypoint, setupTAOrbit } from './ta_animations'
 import { setupPhysicsTest }   from './t1_physics'
 import { setupParticlesTest } from './t2_particles'
 import { setupCameraTest }    from './t3_camera'
@@ -217,7 +218,13 @@ export function setupFeatureTests(): void {
   try { setupPSCrossSessionCounter() }  catch (e) { console.error('[PS3] failed:', e) }
   try { setupPSMessageBus() }           catch (e) { console.error('[PS4] failed:', e) }
   try { setupPSPlayerEvents() }         catch (e) { console.error('[PS5] failed:', e) }
-  console.log('=== ALL ZONES COMPLETE ===')
+  createTAZoneEntrance()
+  try { setupTALerpMove() } catch (e) { console.error('[TA1] failed:', e) }
+  try { setupTARotLoop() }  catch (e) { console.error('[TA2] failed:', e) }
+  try { setupTAPulse() }    catch (e) { console.error('[TA3] failed:', e) }
+  try { setupTAWaypoint() } catch (e) { console.error('[TA4] failed:', e) }
+  try { setupTAOrbit() }    catch (e) { console.error('[TA5] failed:', e) }
+  console.log('=== ALL 86 ZONES COMPLETE ===')
 }
 
 /*
