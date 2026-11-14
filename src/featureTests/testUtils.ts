@@ -26,6 +26,13 @@ export const STATION_POSITIONS: Record<string, { x: number; z: number }> = {
   t8_textshape: { x: 120, z: 50 },
   t9_fonts:     { x: 132, z: 50 },
   t10_nft:      { x: 144, z: 50 },
+  // MonsterLibrary Prototype Zone — Row 3 (Z=78) and Row 4 (Z=98)
+  ml1_nodewalker:   { x: 96,  z: 78 },
+  ml2_shelfghost:   { x: 108, z: 78 },
+  ml3_wanderenemy:  { x: 120, z: 78 },
+  ml4_holdinteract: { x: 132, z: 78 },
+  ml5_pathdistance: { x: 144, z: 78 },
+  ml6_minimap:      { x: 120, z: 98 },
 }
 
 /** Status colors for platform tops */
@@ -114,6 +121,24 @@ export function createButton(
   })
 
   return btn
+}
+
+/**
+ * Creates an entrance arch for the MonsterLibrary Prototype Zone.
+ */
+export function createMLZoneEntrance(): void {
+  const arch = engine.addEntity()
+  Transform.create(arch, {
+    position: Vector3.create(120, 5, 70)
+  })
+  Billboard.create(arch, {})
+  TextShape.create(arch, {
+    text: '👻 MONSTER LIBRARY PROTOTYPES\n🟩 NodeWalk  🟩 ShelfGhost  🟩 WanderEnemy\n🟩 HoldInteract  🟩 PathDistance  🟩 Minimap',
+    fontSize: 2.5,
+    textColor: Color4.create(1, 0.6, 0.1, 1),
+    outlineColor: Color4.Black(),
+    outlineWidth: 0.15
+  })
 }
 
 /**
