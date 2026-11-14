@@ -53,6 +53,16 @@ export const STATION_POSITIONS: Record<string, { x: number; z: number }> = {
   sw7_teleport: { x: 28, z: 44 },
   sw8_bridge:   { x: 40, z: 44 },
   sw9_weight:   { x: 52, z: 44 },
+  // Platform Movement Zone (WEST side: X=8-72, Z=66-88)
+  pm1_pingpong:  { x: 16, z: 66 },
+  pm2_elevator:  { x: 28, z: 66 },
+  pm3_rotating:  { x: 40, z: 66 },
+  pm4_crumble:   { x: 52, z: 66 },
+  pm5_saw:       { x: 64, z: 66 },
+  pm6_pendulum:  { x: 16, z: 88 },
+  pm7_squeeze:   { x: 28, z: 88 },
+  pm8_risingfloor: { x: 40, z: 88 },
+  pm9_fan:       { x: 52, z: 88 },
 }
 
 /** Status colors for platform tops */
@@ -141,6 +151,22 @@ export function createButton(
   })
 
   return btn
+}
+
+/**
+ * Creates an entrance arch for the Platform Movement Zone.
+ */
+export function createPMZoneEntrance(): void {
+  const arch = engine.addEntity()
+  Transform.create(arch, { position: Vector3.create(40, 5, 58) })
+  Billboard.create(arch, {})
+  TextShape.create(arch, {
+    text: '🚀 PLATFORM MOVEMENT ZONE\nRide  Rotate  Crumble  Saw\nPendulum  Squeeze  Fan',
+    fontSize: 2.5,
+    textColor: Color4.create(1, 0.6, 0.2, 1),
+    outlineColor: Color4.Black(),
+    outlineWidth: 0.15
+  })
 }
 
 /**
