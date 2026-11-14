@@ -102,6 +102,18 @@ export const STATION_POSITIONS: Record<string, { x: number; z: number }> = {
   au7_zone:     { x: 108, z: 156 },
   au8_reactive: { x: 120, z: 156 },
   au9_pool:     { x: 132, z: 156 },
+  // Player Power Zones (Z=100, west side gap between PM and FB)
+  pz1_jumppad:  { x: 16, z: 100 },
+  pz2_antigrav: { x: 28, z: 100 },
+  pz3_repulsor: { x: 40, z: 100 },
+  pz4_attractor:{ x: 52, z: 100 },
+  pz5_speedpad: { x: 64, z: 100 },
+  // Persistence & Multiplayer (Z=10, south strip west side)
+  ps1_save:     { x: 16, z: 10  },
+  ps2_load:     { x: 28, z: 10  },
+  ps3_counter:  { x: 40, z: 10  },
+  ps4_msgbus:   { x: 52, z: 10  },
+  ps5_players:  { x: 64, z: 10  },
 }
 
 /** Status colors for platform tops */
@@ -192,6 +204,14 @@ export function createButton(
   return btn
 }
 
+export function createPZZoneEntrance(): void {
+  const e=engine.addEntity();Transform.create(e,{position:Vector3.create(40,5,96)});Billboard.create(e,{})
+  TextShape.create(e,{text:'⚡ PLAYER POWER ZONES\nJump  Anti-Grav  Repulsor  Attractor  Speed',fontSize:2.3,textColor:Color4.create(0.3,1,0.5,1),outlineColor:Color4.Black(),outlineWidth:0.14})
+}
+export function createPSZoneEntrance(): void {
+  const e=engine.addEntity();Transform.create(e,{position:Vector3.create(40,5,14)});Billboard.create(e,{})
+  TextShape.create(e,{text:'💾 PERSISTENCE • MULTIPLAYER\nStorage Save/Load  Counter  MessageBus  Players',fontSize:2.3,textColor:Color4.create(1,0.8,0.3,1),outlineColor:Color4.Black(),outlineWidth:0.14})
+}
 export function createEVZoneEntrance(): void {
   const e = engine.addEntity(); Transform.create(e, { position: Vector3.create(120, 5, 54) }); Billboard.create(e, {})
   TextShape.create(e, { text: '⚡ EVENT CHAIN • LOGIC ZONE\nEvent Bus  Chains  AND/OR/NOT\nFlip-Flop  Rate Limit  Pulse  One-Shot', fontSize: 2.3, textColor: Color4.create(0.5, 1, 0.9, 1), outlineColor: Color4.Black(), outlineWidth: 0.14 })
