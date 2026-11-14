@@ -33,6 +33,16 @@ export const STATION_POSITIONS: Record<string, { x: number; z: number }> = {
   ml4_holdinteract: { x: 132, z: 78 },
   ml5_pathdistance: { x: 144, z: 78 },
   ml6_minimap:      { x: 120, z: 98 },
+  // Hazard Zone — Row 5 (Z=118) + Row 6 (Z=138)
+  hz1_spikewall:    { x: 96,  z: 118 },
+  hz2_spikebox:     { x: 108, z: 118 },
+  hz3_dartwall:     { x: 120, z: 118 },
+  hz4_dartbox:      { x: 132, z: 118 },
+  hz5_disappear:    { x: 144, z: 118 },
+  hz6_bombthrow:    { x: 96,  z: 138 },
+  hz7_turret:       { x: 108, z: 138 },
+  hz8_laser:        { x: 120, z: 138 },
+  hz9_thwomp:       { x: 132, z: 138 },
 }
 
 /** Status colors for platform tops */
@@ -121,6 +131,26 @@ export function createButton(
   })
 
   return btn
+}
+
+/**
+ * Creates an entrance arch for the Hazard Zone.
+ */
+export function createHazardZoneEntrance(): void {
+  const arch = engine.addEntity()
+  Transform.create(arch, {
+    position: Vector3.create(120, 5, 110)
+  })
+  Billboard.create(arch, {})
+  TextShape.create(arch, {
+    text: '⚡ HAZARD ZONE
+🟩 Spikes  🟩 Darts  🟩 Disappear Floor
+🟩 Bomb Throw  🟩 Turrets  🟩 Thwomp',
+    fontSize: 2.5,
+    textColor: Color4.create(1, 0.3, 0.3, 1),
+    outlineColor: Color4.Black(),
+    outlineWidth: 0.15
+  })
 }
 
 /**
