@@ -17,7 +17,7 @@
  * See /FEATURE_TEST_TODO.md for complete asset + control checklist.
  */
 
-import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance, createSWZoneEntrance } from './testUtils'
+import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance, createSWZoneEntrance, createPMZoneEntrance } from './testUtils'
 import { setupMLNodeWalker }     from './ml_nodeWalker'
 import { setupMLShelfGhost }     from './ml_shelfGhost'
 import { setupMLWanderingEnemy } from './ml_wanderingEnemy'
@@ -36,6 +36,11 @@ import { setupSWPressurePlate, setupSWToggleLever }   from './sw_pressurePlate'
 import { setupSWDoor, setupSWKeyLock }               from './sw_doors'
 import { setupSWCheckpoint, setupSWCollectibles }     from './sw_checkpoint'
 import { setupSWTeleporter, setupSWMovingBridge, setupSWWeightPlatform } from './sw_teleporter'
+// Platform Movement Zone
+import { setupPMPingPong, setupPMElevator }                     from './pm_ridePlatforms'
+import { setupPMRotating, setupPMCrumble }                     from './pm_rotatingCrumble'
+import { setupPMSaw, setupPMPendulum }                         from './pm_spinners'
+import { setupPMSqueezeWalls, setupPMRisingFloor, setupPMFan } from './pm_wallsFloor'
 import { setupPhysicsTest }   from './t1_physics'
 import { setupParticlesTest } from './t2_particles'
 import { setupCameraTest }    from './t3_camera'
@@ -106,6 +111,21 @@ export function setupFeatureTests(): void {
   try { setupSWWeightPlatform() }  catch (e) { console.error('[SW9] WeightPlatform failed:', e) }
 
   console.log('=== SWITCH ZONE ready — X=8-72, Z=22-50 ===')
+
+  // ─── Platform Movement Zone (WEST: X=8-72, Z=66-88) ──────────────────────
+  createPMZoneEntrance()
+  console.log('=== PLATFORM ZONE initializing (X=8-72, Z=66-88) ===')
+  try { setupPMPingPong() }     catch (e) { console.error('[PM1] PingPong failed:', e) }
+  try { setupPMElevator() }     catch (e) { console.error('[PM2] Elevator failed:', e) }
+  try { setupPMRotating() }     catch (e) { console.error('[PM3] Rotating failed:', e) }
+  try { setupPMCrumble() }      catch (e) { console.error('[PM4] Crumble failed:', e) }
+  try { setupPMSaw() }          catch (e) { console.error('[PM5] Saw failed:', e) }
+  try { setupPMPendulum() }     catch (e) { console.error('[PM6] Pendulum failed:', e) }
+  try { setupPMSqueezeWalls() } catch (e) { console.error('[PM7] Squeeze failed:', e) }
+  try { setupPMRisingFloor() }  catch (e) { console.error('[PM8] RisingFloor failed:', e) }
+  try { setupPMFan() }          catch (e) { console.error('[PM9] Fan failed:', e) }
+
+  console.log('=== PLATFORM ZONE ready — X=8-72, Z=66-88 ===')
 }
 
 /*
