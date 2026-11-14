@@ -17,7 +17,7 @@
  * See /FEATURE_TEST_TODO.md for complete asset + control checklist.
  */
 
-import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance, createSWZoneEntrance, createPMZoneEntrance } from './testUtils'
+import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance, createSWZoneEntrance, createPMZoneEntrance, createFBZoneEntrance, createCBZoneEntrance } from './testUtils'
 import { setupMLNodeWalker }     from './ml_nodeWalker'
 import { setupMLShelfGhost }     from './ml_shelfGhost'
 import { setupMLWanderingEnemy } from './ml_wanderingEnemy'
@@ -41,6 +41,14 @@ import { setupPMPingPong, setupPMElevator }                     from './pm_rideP
 import { setupPMRotating, setupPMCrumble }                     from './pm_rotatingCrumble'
 import { setupPMSaw, setupPMPendulum }                         from './pm_spinners'
 import { setupPMSqueezeWalls, setupPMRisingFloor, setupPMFan } from './pm_wallsFloor'
+// Feedback / HUD Zone (C)
+import { setupFBScreenShake, setupFBDamageNumbers, setupFBHitFlash } from './fb_screenFeedback'
+import { setupFBScore, setupFBTimer, setupFBObjectiveTracker, setupFBAlert } from './fb_hudSystems'
+import { setupFBDeathSequence, setupFBMinimapBlips }                      from './fb_deathMinimap'
+// Combat Extensions (D)
+import { setupCBHpEntity, setupCBProximityMine }                          from './cb_hpMine'
+import { setupCBHoming, setupCBMeleeSwing, setupCBRespawning }            from './cb_projectileEnemy'
+import { setupCBBeamGate, setupCBStunZone, setupCBLootDrop, setupCBShield } from './cb_gateStunLoot'
 import { setupPhysicsTest }   from './t1_physics'
 import { setupParticlesTest } from './t2_particles'
 import { setupCameraTest }    from './t3_camera'
@@ -126,6 +134,34 @@ export function setupFeatureTests(): void {
   try { setupPMFan() }          catch (e) { console.error('[PM9] Fan failed:', e) }
 
   console.log('=== PLATFORM ZONE ready — X=8-72, Z=66-88 ===')
+
+  // ─── Feedback / HUD Zone (Z=110-130) ──────────────────────────────
+  createFBZoneEntrance()
+  console.log('=== FEEDBACK ZONE initializing (Z=110-130) ===')
+  try { setupFBScreenShake() }        catch (e) { console.error('[FB1] failed:', e) }
+  try { setupFBDamageNumbers() }       catch (e) { console.error('[FB2] failed:', e) }
+  try { setupFBHitFlash() }            catch (e) { console.error('[FB3] failed:', e) }
+  try { setupFBScore() }               catch (e) { console.error('[FB4] failed:', e) }
+  try { setupFBTimer() }               catch (e) { console.error('[FB5] failed:', e) }
+  try { setupFBObjectiveTracker() }    catch (e) { console.error('[FB6] failed:', e) }
+  try { setupFBAlert() }               catch (e) { console.error('[FB7] failed:', e) }
+  try { setupFBDeathSequence() }       catch (e) { console.error('[FB8] failed:', e) }
+  try { setupFBMinimapBlips() }        catch (e) { console.error('[FB9] failed:', e) }
+  console.log('=== FEEDBACK ZONE ready ===')
+
+  // ─── Combat Extensions (Z=146-154) ──────────────────────────────
+  createCBZoneEntrance()
+  console.log('=== COMBAT ZONE initializing (Z=146-154) ===')
+  try { setupCBHpEntity() }     catch (e) { console.error('[CB1] failed:', e) }
+  try { setupCBProximityMine() } catch (e) { console.error('[CB2] failed:', e) }
+  try { setupCBHoming() }       catch (e) { console.error('[CB3] failed:', e) }
+  try { setupCBMeleeSwing() }   catch (e) { console.error('[CB4] failed:', e) }
+  try { setupCBRespawning() }   catch (e) { console.error('[CB5] failed:', e) }
+  try { setupCBBeamGate() }     catch (e) { console.error('[CB6] failed:', e) }
+  try { setupCBStunZone() }     catch (e) { console.error('[CB7] failed:', e) }
+  try { setupCBLootDrop() }     catch (e) { console.error('[CB8] failed:', e) }
+  try { setupCBShield() }       catch (e) { console.error('[CB9] failed:', e) }
+  console.log('=== COMBAT ZONE ready ===')
 }
 
 /*
