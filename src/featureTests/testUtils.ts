@@ -63,6 +63,26 @@ export const STATION_POSITIONS: Record<string, { x: number; z: number }> = {
   pm7_squeeze:   { x: 28, z: 88 },
   pm8_risingfloor: { x: 40, z: 88 },
   pm9_fan:       { x: 52, z: 88 },
+  // Feedback / HUD Zone (Z=110-130)
+  fb1_shake:    { x: 16, z: 110 },
+  fb2_damnums:  { x: 28, z: 110 },
+  fb3_hitflash: { x: 40, z: 110 },
+  fb4_score:    { x: 52, z: 110 },
+  fb5_timer:    { x: 64, z: 110 },
+  fb6_obj:      { x: 16, z: 130 },
+  fb7_alert:    { x: 28, z: 130 },
+  fb8_death:    { x: 40, z: 130 },
+  fb9_minimap:  { x: 52, z: 130 },
+  // Combat Extensions Zone (Z=146-154)
+  cb1_hp:       { x: 16, z: 146 },
+  cb2_mine:     { x: 28, z: 146 },
+  cb3_homing:   { x: 40, z: 146 },
+  cb4_melee:    { x: 52, z: 146 },
+  cb5_respawn:  { x: 64, z: 146 },
+  cb6_gate:     { x: 16, z: 154 },
+  cb7_stun:     { x: 28, z: 154 },
+  cb8_loot:     { x: 40, z: 154 },
+  cb9_shield:   { x: 52, z: 154 },
 }
 
 /** Status colors for platform tops */
@@ -153,6 +173,14 @@ export function createButton(
   return btn
 }
 
+export function createFBZoneEntrance(): void {
+  const e = engine.addEntity(); Transform.create(e, { position: Vector3.create(40, 5, 102) }); Billboard.create(e, {})
+  TextShape.create(e, { text: '📸 FEEDBACK • HUD ZONE\nShake  Numbers  Flash  Score\nTimer  Objectives  Alert  Death', fontSize: 2.4, textColor: Color4.create(0.9, 1, 0.5, 1), outlineColor: Color4.Black(), outlineWidth: 0.14 })
+}
+export function createCBZoneEntrance(): void {
+  const e = engine.addEntity(); Transform.create(e, { position: Vector3.create(40, 5, 138) }); Billboard.create(e, {})
+  TextShape.create(e, { text: '⚔ COMBAT EXTENSIONS\nHP Bars  Mines  Homing  Melee\nRespawn  Gates  Stun  Loot  Shield', fontSize: 2.4, textColor: Color4.create(1, 0.4, 0.4, 1), outlineColor: Color4.Black(), outlineWidth: 0.14 })
+}
 /**
  * Creates an entrance arch for the Platform Movement Zone.
  */
