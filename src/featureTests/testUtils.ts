@@ -43,6 +43,16 @@ export const STATION_POSITIONS: Record<string, { x: number; z: number }> = {
   hz7_turret:       { x: 108, z: 138 },
   hz8_laser:        { x: 120, z: 138 },
   hz9_thwomp:       { x: 132, z: 138 },
+  // Switch Zone (WEST side: X=8-72, Z=22-50)
+  sw1_plate:    { x: 16, z: 22 },
+  sw2_lever:    { x: 28, z: 22 },
+  sw3_door:     { x: 40, z: 22 },
+  sw4_keylock:  { x: 52, z: 22 },
+  sw5_checkpoint: { x: 64, z: 22 },
+  sw6_collect:  { x: 16, z: 44 },
+  sw7_teleport: { x: 28, z: 44 },
+  sw8_bridge:   { x: 40, z: 44 },
+  sw9_weight:   { x: 52, z: 44 },
 }
 
 /** Status colors for platform tops */
@@ -131,6 +141,24 @@ export function createButton(
   })
 
   return btn
+}
+
+/**
+ * Creates an entrance arch for the Switch/Door/Pickup Zone.
+ */
+export function createSWZoneEntrance(): void {
+  const arch = engine.addEntity()
+  Transform.create(arch, {
+    position: Vector3.create(40, 5, 10)
+  })
+  Billboard.create(arch, {})
+  TextShape.create(arch, {
+    text: '🔑 SWITCH • DOOR • PICKUP ZONE\nPlates  Levers  Doors  Keys\nCheckpoints  Pickups  Teleporters',
+    fontSize: 2.5,
+    textColor: Color4.create(0.3, 0.9, 1, 1),
+    outlineColor: Color4.Black(),
+    outlineWidth: 0.15
+  })
 }
 
 /**
