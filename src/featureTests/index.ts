@@ -17,7 +17,7 @@
  * See /FEATURE_TEST_TODO.md for complete asset + control checklist.
  */
 
-import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance, createSWZoneEntrance, createPMZoneEntrance, createFBZoneEntrance, createCBZoneEntrance, createEVZoneEntrance, createAUZoneEntrance } from './testUtils'
+import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance, createSWZoneEntrance, createPMZoneEntrance, createFBZoneEntrance, createCBZoneEntrance, createEVZoneEntrance, createAUZoneEntrance, createPZZoneEntrance, createPSZoneEntrance } from './testUtils'
 import { setupMLNodeWalker }     from './ml_nodeWalker'
 import { setupMLShelfGhost }     from './ml_shelfGhost'
 import { setupMLWanderingEnemy } from './ml_wanderingEnemy'
@@ -57,6 +57,10 @@ import { setupEVRateLimiter, setupEVPulse, setupEVOneShot }     from './ev_timin
 import { setupAUBasic, setupAUSpatial, setupAUAmbientZone }     from './au_basicAudio'
 import { setupAUSoundState, setupAULayered, setupAUCrossfade }  from './au_advancedAudio'
 import { setupAUZoneAudio, setupAUReactive, setupAUPool }       from './au_reactiveAudio'
+// Player Power Zones (G)
+import { setupPZTrampoline, setupPZAntiGrav, setupPZRepulsor, setupPZAttractor, setupPZSpeedPad } from './pz_powerZones'
+// Persistence & Multiplayer (H)
+import { setupPSStorageWrite, setupPSStorageRead, setupPSCrossSessionCounter, setupPSMessageBus, setupPSPlayerEvents } from './ps_persistence'
 import { setupPhysicsTest }   from './t1_physics'
 import { setupParticlesTest } from './t2_particles'
 import { setupCameraTest }    from './t3_camera'
@@ -197,6 +201,23 @@ export function setupFeatureTests(): void {
   try { setupAUReactive() }      catch (e) { console.error('[AU8] failed:', e) }
   try { setupAUPool() }          catch (e) { console.error('[AU9] failed:', e) }
   console.log('=== AUDIO ZONE ready ===')
+
+  // ─── Player Power Zones (Z=100, west side) ────────────────────────────
+  createPZZoneEntrance()
+  try { setupPZTrampoline() }  catch (e) { console.error('[PZ1] failed:', e) }
+  try { setupPZAntiGrav() }    catch (e) { console.error('[PZ2] failed:', e) }
+  try { setupPZRepulsor() }    catch (e) { console.error('[PZ3] failed:', e) }
+  try { setupPZAttractor() }   catch (e) { console.error('[PZ4] failed:', e) }
+  try { setupPZSpeedPad() }    catch (e) { console.error('[PZ5] failed:', e) }
+
+  // ─── Persistence & Multiplayer (Z=10, south strip) ──────────────────
+  createPSZoneEntrance()
+  try { setupPSStorageWrite() }         catch (e) { console.error('[PS1] failed:', e) }
+  try { setupPSStorageRead() }          catch (e) { console.error('[PS2] failed:', e) }
+  try { setupPSCrossSessionCounter() }  catch (e) { console.error('[PS3] failed:', e) }
+  try { setupPSMessageBus() }           catch (e) { console.error('[PS4] failed:', e) }
+  try { setupPSPlayerEvents() }         catch (e) { console.error('[PS5] failed:', e) }
+  console.log('=== ALL ZONES COMPLETE ===')
 }
 
 /*
