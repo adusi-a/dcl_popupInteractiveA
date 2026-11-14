@@ -17,13 +17,20 @@
  * See /FEATURE_TEST_TODO.md for complete asset + control checklist.
  */
 
-import { createZoneEntrance, createMLZoneEntrance } from './testUtils'
+import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance } from './testUtils'
 import { setupMLNodeWalker }     from './ml_nodeWalker'
 import { setupMLShelfGhost }     from './ml_shelfGhost'
 import { setupMLWanderingEnemy } from './ml_wanderingEnemy'
 import { setupMLHoldInteract }   from './ml_holdInteract'
 import { setupMLPathDistance }   from './ml_pathDistance'
 import { setupMLMinimap }        from './ml_minimap'
+// Hazard Zone
+import { setupHZSpikeWall, setupHZSpikeBox } from './hz_spikes'
+import { setupHZDartWall, setupHZDartBox }   from './hz_darts'
+import { setupHZDisappearFloor }             from './hz_disappearFloor'
+import { setupHZBombThrower }                from './hz_bombThrower'
+import { setupHZTurret, setupHZLaserTurret } from './hz_turret'
+import { setupHZThwomp }                     from './hz_thwomp'
 import { setupPhysicsTest }   from './t1_physics'
 import { setupParticlesTest } from './t2_particles'
 import { setupCameraTest }    from './t3_camera'
@@ -64,6 +71,21 @@ export function setupFeatureTests(): void {
 
   console.log('=== FEATURE TEST ZONE ready — walk to X=88-155, Z=8-104 ===')
   console.log('=== MONSTER LIBRARY PROTOTYPES — Z=78-104 ===')
+
+  // ─── Hazard Zone (Z=118-138) ────────────────────────────────
+  createHazardZoneEntrance()
+  console.log('=== HAZARD ZONE initializing (Z=118-138) ===')
+  try { setupHZSpikeWall() }     catch (e) { console.error('[HZ1] SpikeWall failed:', e) }
+  try { setupHZSpikeBox() }      catch (e) { console.error('[HZ2] SpikeBox failed:', e) }
+  try { setupHZDartWall() }      catch (e) { console.error('[HZ3] DartWall failed:', e) }
+  try { setupHZDartBox() }       catch (e) { console.error('[HZ4] DartBox failed:', e) }
+  try { setupHZDisappearFloor() } catch (e) { console.error('[HZ5] DisappearFloor failed:', e) }
+  try { setupHZBombThrower() }   catch (e) { console.error('[HZ6] BombThrower failed:', e) }
+  try { setupHZTurret() }        catch (e) { console.error('[HZ7] Turret failed:', e) }
+  try { setupHZLaserTurret() }   catch (e) { console.error('[HZ8] LaserTurret failed:', e) }
+  try { setupHZThwomp() }        catch (e) { console.error('[HZ9] Thwomp failed:', e) }
+
+  console.log('=== HAZARD ZONE ready — Z=118-138 ===')
 }
 
 /*
