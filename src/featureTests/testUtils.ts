@@ -114,6 +114,12 @@ export const STATION_POSITIONS: Record<string, { x: number; z: number }> = {
   ps3_counter:  { x: 40, z: 10  },
   ps4_msgbus:   { x: 52, z: 10  },
   ps5_players:  { x: 64, z: 10  },
+  // Transform Animation Zone (east side gap Z=108)
+  ta1_lerpmove:  { x: 96,  z: 108 },
+  ta2_rotloop:   { x: 108, z: 108 },
+  ta3_pulse:     { x: 120, z: 108 },
+  ta4_waypoint:  { x: 132, z: 108 },
+  ta5_orbit:     { x: 144, z: 108 },
 }
 
 /** Status colors for platform tops */
@@ -204,6 +210,10 @@ export function createButton(
   return btn
 }
 
+export function createTAZoneEntrance(): void {
+  const e=engine.addEntity();Transform.create(e,{position:Vector3.create(120,5,104)});Billboard.create(e,{})
+  TextShape.create(e,{text:'🔄 TRANSFORM ANIMATIONS\nLerp  Rotate  Pulse  Waypoint  Orbit',fontSize:2.3,textColor:Color4.create(0.8,0.6,1,1),outlineColor:Color4.Black(),outlineWidth:0.14})
+}
 export function createPZZoneEntrance(): void {
   const e=engine.addEntity();Transform.create(e,{position:Vector3.create(40,5,96)});Billboard.create(e,{})
   TextShape.create(e,{text:'⚡ PLAYER POWER ZONES\nJump  Anti-Grav  Repulsor  Attractor  Speed',fontSize:2.3,textColor:Color4.create(0.3,1,0.5,1),outlineColor:Color4.Black(),outlineWidth:0.14})
