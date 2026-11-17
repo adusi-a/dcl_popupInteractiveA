@@ -32,8 +32,7 @@ import {
   engine, Transform, MeshRenderer, MeshCollider, Material, TextShape, Billboard,
   pointerEventsSystem, TriggerArea, triggerAreaEventsSystem,
   InputModifier, PointerLock, PrimaryPointerInfo,
-  inputSystem, ColliderLayer,
-  ModifierKey, InputModifierMode
+  inputSystem, ColliderLayer
 } from '@dcl/sdk/ecs'
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { InputAction, PointerEventType } from '@dcl/sdk/ecs'
