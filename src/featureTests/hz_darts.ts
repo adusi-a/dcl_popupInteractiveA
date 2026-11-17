@@ -62,16 +62,16 @@ import { createStation, STATUS_COLOR } from './testUtils'
 interface DartPoolEntry {
   entity:   ReturnType<typeof engine.addEntity>
   active:   boolean
-  pos:      Vector3
-  dir:      Vector3   // unit direction
+  pos:      {x:number; y:number; z:number}
+  dir:      {x:number; y:number; z:number}  // unit direction
   speed:    number
   elapsed:  number
   maxRange: number
 }
 
 interface LauncherEntry {
-  launcherPos: Vector3
-  fireDir:     Vector3
+  launcherPos: {x:number; y:number; z:number}
+  fireDir:     {x:number; y:number; z:number}
   dartSpeed:   number
   dartMaxRange: number
   dartLength:  number
@@ -97,7 +97,7 @@ function initDartPool(count: number): void {
       albedoColor: Color4.create(0.9, 0.7, 0.1, 1),
       emissiveColor: { r: 0.4, g: 0.3, b: 0 }, emissiveIntensity: 0.6
     })
-    dartPool.push({ entity: e, active: false, pos: Vector3.create(0, -50, 0), dir: Vector3.create(0, 0, 1), speed: 10, elapsed: 0, maxRange: 10 })
+    dartPool.push({ entity: e, active: false, pos: {x:0, y:-50, z:0}, dir: {x:0, y:0, z:1}, speed: 10, elapsed: 0, maxRange: 10 })
   }
 }
 
@@ -107,8 +107,8 @@ function fireDart(launcher: LauncherEntry, dir: Vector3): void {
   if (!dart) return
 
   dart.active  = true
-  dart.pos     = Vector3.create(launcher.launcherPos.x, launcher.launcherPos.y, launcher.launcherPos.z)
-  dart.dir     = Vector3.create(dir.x, dir.y, dir.z)
+  dart.pos = {x: launcher.launcherPos.x, y: launcher.launcherPos.y, z: launcher.launcherPos.z}
+  dart.dir = {x: dir.x, y: dir.y, z: dir.z}
   dart.speed   = launcher.dartSpeed
   dart.elapsed = 0
   dart.maxRange = launcher.dartMaxRange
@@ -154,10 +154,7 @@ function ensureDartSystem(launcher: LauncherEntry): void {
 
       if (dist < 0.7) {
         // HIT
-        Physics.applyKnockbackToPlayer({
-          direction: Vector3.create(dart.dir.x, 0.3, dart.dir.z),
-          falloff: 1, magnitude: 7
-        })
+        Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 7)
         console.log('[HZ] DART HIT — knockback applied')
         resetDart(dart)
         continue
@@ -185,7 +182,7 @@ export function setupHZDartWall(): void {
 
   // Pre-create dart pool (shared with HZ4 — 8 total)
   if (dartPool.length === 0) initDartPool(8)
-  ensureDartSystem({ launcherPos: Vector3.Zero(), fireDir: Vector3.Zero(), dartSpeed: 10, dartMaxRange: 8, dartLength: 0.5, dartWidth: 0.08, hitRadius: 0.7, logTag: 'HZ3' })
+  ensureDartSystem({ launcherPos: {x:0,y:0,z:0}, fireDir: {x:0,y:0,z:0}, dartSpeed: 10, dartMaxRange: 8, dartLength: 0.5, dartWidth: 0.08, hitRadius: 0.7, logTag: 'HZ3' })
 
   // Wall backing
   const wallBacking = engine.addEntity()
@@ -217,8 +214,8 @@ export function setupHZDartWall(): void {
     })
 
     launchers.push({
-      launcherPos: Vector3.create(lx, ly, z - 2.4),
-      fireDir:     Vector3.create(0, 0, 1),   // fire along +Z
+      launcherPos: {x: lx, y: ly, z: z - 2.4},
+      fireDir: {x: 0, y: 0, z: 1},   // fire along +Z
       dartSpeed: 10, dartMaxRange: 8, dartLength: 0.5, dartWidth: 0.08,
       hitRadius: 0.7, logTag: 'HZ3'
     })
@@ -287,8 +284,8 @@ export function setupHZDartBox(): void {
     emissiveColor: { r: 0.2, g: 0.1, b: 0 }, emissiveIntensity: 0.3
   })
 
-  const launcherL: LauncherEntry = { launcherPos: Vector3.create(x - 0.4, 1.0, z), fireDir: Vector3.create(-1, 0, 0), dartSpeed: 12, dartMaxRange: 6, dartLength: 0.45, dartWidth: 0.1, hitRadius: 0.6, logTag: 'HZ4' }
-  const launcherR: LauncherEntry = { launcherPos: Vector3.create(x + 0.4, 1.0, z), fireDir: Vector3.create(1, 0, 0),  dartSpeed: 12, dartMaxRange: 6, dartLength: 0.45, dartWidth: 0.1, hitRadius: 0.6, logTag: 'HZ4' }
+  const launcherL: LauncherEntry = { launcherPos: {x: x - 0.4, y: 1.0, z: z}, fireDir: {x: -1, y: 0, z: 0}, dartSpeed: 12, dartMaxRange: 6, dartLength: 0.45, dartWidth: 0.1, hitRadius: 0.6, logTag: 'HZ4' }
+  const launcherR: LauncherEntry = { launcherPos: {x: x + 0.4, y: 1.0, z: z}, fireDir: {x: 1, y: 0, z: 0},  dartSpeed: 12, dartMaxRange: 6, dartLength: 0.45, dartWidth: 0.1, hitRadius: 0.6, logTag: 'HZ4' }
 
   // Direction arrows
   for (const [ox, label] of [[-3.5, '← LEFT dart'], [3.5, 'RIGHT dart →']]) {
