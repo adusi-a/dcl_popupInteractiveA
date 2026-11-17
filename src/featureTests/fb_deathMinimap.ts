@@ -38,7 +38,7 @@ export function triggerDeathSequence(respawnPos: Vector3, onComplete?: () => voi
   // Step 1: Black out camera (position VirtualCamera looking at black box)
   const blackCam = engine.addEntity()
   Transform.create(blackCam, { position: Vector3.create(80, 1.5, 70) }) // near spawn
-  VirtualCamera.create(blackCam, { defaultTransition: { transitionMode: 2, speed: 30 } as any })
+  VirtualCamera.create(blackCam, { defaultTransition: { transitionMode: { $case: 'time', time: 0.2 } } as any })
 
   // Black plane in front of camera
   const blackPlane = engine.addEntity()
