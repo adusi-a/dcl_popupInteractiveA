@@ -287,6 +287,7 @@ export function setupHZBombThrower(): void {
     const flashSystem = engine.addSystem((dt: number) => {
       flashTimer += dt
       if (flashTimer > 0.25) {
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
         engine.removeSystem(flashSystem)
         const tb = Transform.getMutableOrNull(bombEntity)
         if (tb) {
