@@ -5,8 +5,9 @@
  * BEFORE TESTING:
  *   1. Run: npm install dcl-npc-toolkit
  *      (Add "dcl-npc-toolkit": "latest" to package.json — done below)
- *   2. ASSET NEEDED: assets/models/npc_guard.glb
- *      A humanoid GLB with animation clips named 'idle' and 'walk'.
+ *   2. ASSET PLACED: assets/models/npc_guard.glb (bipedA from GhostTown V1)
+ *      Clips available: Zombie_Scream, Walking, Unsteady_Walk, Running, Female_Run_Forward_Pick_Up_Right
+ *      Mapped: idleAnim='Unsteady_Walk', walkingAnim='Walking'
  *      Source from DCL model catalog (8,800+ free models):
  *        npx @dcl/sdk-commands asset-pack --list
  *      Or use the Creator Hub catalog search for "guard", "npc", or "humanoid".
@@ -29,7 +30,8 @@
  *
  * SDK NOTES:
  *   • dcl-npc-toolkit provides NPCBodyShape, NPCType, NPC.create()
- *   • GLB must have named animation clips ('idle', 'walk', 'talk')
+ *   • GLB must have named animation clips matching idleAnim/walkingAnim in NPC.create()
+ *   • bipedA.glb clips: Zombie_Scream, Walking, Unsteady_Walk, Running, Female_Run_Forward_Pick_Up_Right
  *   • For game-integrated NPCs with deep coupling, use InteractiveEntity
  *     from the DN framework instead (already confirmed working in this scene)
  */
@@ -57,6 +59,9 @@ try {
 }
 
 const NPC_GLB = 'assets/models/npc_guard.glb'  // ✅ placed (bipedA from GhostTown V1)
+// bipedA clips: Zombie_Scream | Walking | Unsteady_Walk | Running | Female_Run_Forward_Pick_Up_Right
+const ANIM_IDLE = 'Unsteady_Walk'   // best available 'at rest' clip
+const ANIM_WALK = 'Walking'          // standard walk
 
 export function setupNPCTest(): void {
   const { x, z } = { x: 96, z: 50 }
@@ -68,13 +73,13 @@ export function setupNPCTest(): void {
     Transform.create(msgEntity, { position: Vector3.create(x, 2.5, z) })
     Billboard.create(msgEntity)
     TextShape.create(msgEntity, {
-      text: '⚠️ Run before testing:\nnpm install dcl-npc-toolkit\n\nASSET: assets/models/npc_guard.glb',
+      text: '⚠️ dcl-npc-toolkit not installed\nRun: npm install dcl-npc-toolkit',
       fontSize: 1.4,
       textColor: Color4.create(1, 0.8, 0, 1),
       outlineColor: Color4.Black(), outlineWidth: 0.1
     })
     console.log('[T6] ⚠️  dcl-npc-toolkit not installed — run: npm install dcl-npc-toolkit')
-    console.log('[T6] ⚠️  Also needed: assets/models/npc_guard.glb (humanoid GLB with idle+walk clips)')
+    console.log('[T6] ⚠️  toolkit not found — run: npm install dcl-npc-toolkit')
     return
   }
 
@@ -84,7 +89,7 @@ export function setupNPCTest(): void {
     {
       type: NPCType.CUSTOM,
       bodyShape: NPCBodyShape.MALE,
-      model: NPC_GLB,       // 🟨 ASSET: assets/models/npc_guard.glb
+      model: NPC_GLB,
       name: 'Guard',
       onActivate: () => {
         console.log('[T6] Guard NPC activated')
@@ -112,7 +117,7 @@ export function setupNPCTest(): void {
           0  // start at index 0
         )
       },
-      idleAnim: 'idle',
+      idleAnim: ANIM_IDLE,
       hoverText: 'Talk to Guard'
     }
   )
@@ -144,7 +149,7 @@ export function setupNPCTest(): void {
     {
       type: NPCType.CUSTOM,
       bodyShape: NPCBodyShape.FEMALE,
-      model: NPC_GLB,       // 🟨 ASSET: assets/models/npc_guard.glb
+      model: NPC_GLB,
       name: 'Patrol Scout',
       walkingSpeed: 2,
       walkingAnimationSpeed: 1,
@@ -154,8 +159,8 @@ export function setupNPCTest(): void {
             buttons: [{ label: 'Keep it up!', goToIndex: -1 }] }
         ], 0)
       },
-      walkingAnim: 'walk',
-      idleAnim: 'idle',
+      walkingAnim: ANIM_WALK,
+      idleAnim: ANIM_IDLE,
       hoverText: 'Talk to Scout'
     }
   )
@@ -167,7 +172,7 @@ export function setupNPCTest(): void {
     {
       type: NPCType.CUSTOM,
       bodyShape: NPCBodyShape.MALE,
-      model: NPC_GLB,       // 🟨 ASSET: assets/models/npc_guard.glb
+      model: NPC_GLB,
       name: 'Companion',
       onActivate: () => {
         NPC.talk([
@@ -187,13 +192,14 @@ export function setupNPCTest(): void {
           }
         ], 0)
       },
-      idleAnim: 'idle',
-      walkingAnim: 'walk',
+      idleAnim: ANIM_IDLE,
+      walkingAnim: ANIM_WALK,
       walkingSpeed: 3,
       hoverText: 'Talk to Companion'
     }
   )
 
-  console.log('[T6] NPC Toolkit test station initialized')
-  console.log('[T6] 🟨 ASSET NEEDED: assets/models/npc_guard.glb (humanoid with idle+walk clips)')
+  console.log('[T6] ✅ NPC Toolkit test station initialized')
+  console.log('[T6]   bipedA.glb placed | idleAnim=Unsteady_Walk | walkingAnim=Walking')
+  console.log('[T6]   NOTE: GhostTown zombie character — animations are zombie-style, not guard-style')
 }
