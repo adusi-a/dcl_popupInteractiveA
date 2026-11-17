@@ -113,7 +113,7 @@ export function setupCBHoming(): void {
     // Check player hit
     const ph = Math.sqrt((pT.position.x - orbPos.x)**2 + (pT.position.z - orbPos.z)**2)
     if (ph < HIT_RADIUS && hitImmunity <= 0) {
-      Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 8)
+      Physics.applyKnockbackToPlayer(Vector3.create(orbPos.x, orbPos.y, orbPos.z), 8)
       hitImmunity = 1.5; orbActive = false
       Transform.getMutable(orb).position = Vector3.create(0, -50, 0)
       Transform.getMutable(orbTrail).position = Vector3.create(0, -50, 0)
@@ -171,8 +171,8 @@ export function setupCBMeleeSwing(): void {
   // Arm entity (rotates around pivot)
   const arm = engine.addEntity()
   Transform.create(arm, {
-    position: Vector3.create(PIVOT_X + ARM_LENGTH * 0.5, PIVOT_Y, PIVOT_Z),
-    scale: Vector3.create(ARM_LENGTH, 0.18, 0.18),
+    position: Vector3.create(PIVOT_X, PIVOT_Y, PIVOT_Z + ARM_LENGTH * 0.5),
+    scale: Vector3.create(0.18, 0.18, ARM_LENGTH),
     rotation: Quaternion.fromEulerDegrees(0, 0, 0)
   })
   MeshRenderer.setBox(arm)
