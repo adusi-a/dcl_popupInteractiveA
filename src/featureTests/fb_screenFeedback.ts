@@ -43,7 +43,7 @@ export function triggerScreenShake(intensity: number, duration: number): void {
     Transform.create(shakeCamEntity, { position: Vector3.create(pT.position.x, pT.position.y + 1.6, pT.position.z) })
   }
   VirtualCamera.createOrReplace(shakeCamEntity, {
-    defaultTransition: { $case: "speed" as const, speed: 20 }
+    defaultTransition: { transitionMode: 2, speed: 20 } as any
   })
   console.log(`[FB1] Screen shake — intensity=${intensity}, duration=${duration}s`)
 }
