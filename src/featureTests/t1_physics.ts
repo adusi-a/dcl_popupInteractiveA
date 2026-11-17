@@ -137,12 +137,12 @@ export function setupPhysicsTest(): void {
   triggerAreaEventsSystem.onTriggerExit(windZoneTrigger, (e) => {
     if (e.trigger?.entity !== engine.PlayerEntity) return
     playerInWind = false
-    Physics.removeForceFromPlayer(windEntity)  // belt-and-suspenders cleanup
+    Physics.removeForceFromPlayer(engine.RootEntity)  // belt-and-suspenders cleanup
     console.log('[T1] Left wind zone')
   })
   engine.addSystem((_dt: number) => {
     if (!playerInWind) return
-    Physics.applyForceToPlayer(windEntity, Vector3.create(0, 4, 0))
+    Physics.applyForceToPlayer(engine.RootEntity, Vector3.create(0, 4, 0))
   }, 1)
 
   const windLabel = engine.addEntity()
