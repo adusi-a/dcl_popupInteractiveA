@@ -45,12 +45,15 @@ import { createStation, createButton, STATUS_COLOR } from './testUtils'
 
 // AvatarLocomotionSettings may need to be imported separately on SDK 7.24.3+
 // If the import below fails at compile time, comment it out and note the SDK is older than 7.24.3
+let AvatarLocomotion: any = null
 let AvatarLocomotionSettings: any
 try {
   // Dynamic-style comment: import { AvatarLocomotionSettings } from '@dcl/sdk/ecs'
   // Replace the try/catch with a direct import once SDK ≥ 7.24.3 is confirmed
   // @ts-ignore — require works in DCL/esbuild QuickJS context
-  AvatarLocomotionSettings = (require('@dcl/sdk/ecs') as any).AvatarLocomotionSettings
+  const _sdk = (require('@dcl/sdk/ecs') as any)
+  AvatarLocomotionSettings = _sdk.AvatarLocomotionSettings
+  AvatarLocomotion = _sdk.AvatarLocomotion
 } catch {
   AvatarLocomotionSettings = null
 }
