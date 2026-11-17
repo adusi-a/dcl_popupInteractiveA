@@ -48,6 +48,7 @@ import { createStation, createButton, STATUS_COLOR } from './testUtils'
 // AvatarMask — SDK 7.x (may be in different import location)
 let AvatarMask: any
 try {
+  // @ts-ignore — require works in DCL/esbuild QuickJS context
   AvatarMask = (require('@dcl/sdk/ecs') as any).AvatarMask
 } catch {
   AvatarMask = null
@@ -127,7 +128,7 @@ export function setupEmotesTest(): void {
       } catch {
         // Fallback to built-in (no mask support on predefined emotes)
         triggerEmote({ predefinedEmote: 'wave' })
-        console.warn('[T7] Masked emote needs pack .glb file — playing built-in wave as fallback')
+        console.error('[T7] Masked emote needs pack .glb file — playing built-in wave as fallback')
       }
     }
   )
