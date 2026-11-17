@@ -85,14 +85,12 @@ export function setupCBBeamGate(): void {
     position: Vector3.create(x, BEAM_Y, z),
     scale: Vector3.create(0.4, 1.5, BEAM_LENGTH)
   })
-  TriggerArea.create(beamTrigger, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(0.4, 1.5, BEAM_LENGTH) }]
-  })
+  TriggerArea.setBox(beamTrigger)
 
   let armed = true; let alarmTimer = 0
 
-  triggerAreaEventsSystem.onEnterArea(beamTrigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity || !armed) return
+  triggerAreaEventsSystem.onTriggerEnter(beamTrigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity || !armed) return
     armed = false
     // Beam turns red — alarm!
     Material.setPbrMaterial(beamEntity, { albedoColor: Color4.create(1, 0.1, 0.1, 0.9), emissiveColor: { r: 0.9, g: 0, b: 0 }, emissiveIntensity: 2, transparencyMode: 1 })
@@ -157,15 +155,13 @@ export function setupCBStunZone(): void {
   // Stun zone trigger
   const trigger = engine.addEntity()
   Transform.create(trigger, { position: Vector3.create(x, 1.0, z), scale: Vector3.create(4.0, 2.0, 4.0) })
-  TriggerArea.create(trigger, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(4.0, 2.0, 4.0) }]
-  })
+  TriggerArea.setBox(trigger)
 
   let stunned = false; let stunTimer = 0
   let stunModifierEntity: ReturnType<typeof engine.addEntity> | null = null
 
-  triggerAreaEventsSystem.onEnterArea(trigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity || stunned) return
+  triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity || stunned) return
     stunned = true; stunTimer = STUN_DURATION
 
     // Create AvatarModifierArea at player position to freeze
@@ -175,8 +171,8 @@ export function setupCBStunZone(): void {
       position: pT ? Vector3.create(pT.position.x, pT.position.y, pT.position.z) : Vector3.create(x, 1, z)
     })
     AvatarModifierArea.create(stunModifierEntity, {
-      area: { box: { x: 10, y: 4, z: 10 } },
-      modifiers: [AvatarModifierType.AMT_DISABLE_LOCOMOTION]
+      area: Vector3.create(10, 4, 10),
+      modifiers: [AvatarModifierType.AMT_HIDE_AVATARS]
     })
 
     TextShape.getMutable(statusLbl).text = `⚡ STUNNED! ${STUN_DURATION.toFixed(0)}s`
@@ -241,7 +237,7 @@ export function setupCBLootDrop(): void {
   // Loot trigger (walk over to collect)
   const lootTrigger = engine.addEntity()
   Transform.create(lootTrigger, { position: Vector3.create(x, -50, z - 1.5), scale: Vector3.create(1.2, 1.2, 1.2) })
-  TriggerArea.create(lootTrigger, { triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(1.2, 1.2, 1.2) }] })
+  TriggerArea.setBox(lootTrigger)
 
   // Inventory display
   const inventoryLbl = engine.addEntity()
@@ -271,8 +267,8 @@ export function setupCBLootDrop(): void {
     console.log('[CB8] Enemy killed — loot spawned!')
   })
 
-  triggerAreaEventsSystem.onEnterArea(lootTrigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity || !lootVisible) return
+  triggerAreaEventsSystem.onTriggerEnter(lootTrigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity || !lootVisible) return
     lootVisible = false; lootCount++
     lootInventory.push(`HealthGem_${lootCount}`)
     Transform.getMutable(lootEntity).position = Vector3.create(x, -50, z - 1.5)
@@ -389,7 +385,7 @@ export function setupCBShield(): void {
       if (pT) {
         const dx = pT.position.x - d.posX; const dz2 = pT.position.z - d.posZ
         if (Math.sqrt(dx*dx + dz2*dz2) < 0.6) {
-          Physics.applyKnockbackToPlayer({ direction: Vector3.create(0, 0.3, d.dirZ), falloff: 1, magnitude: 6 })
+          Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 6)
           d.active = false; t.position = Vector3.create(0, -50, 0)
           console.log('[CB9] Player hit by dart')
           continue
