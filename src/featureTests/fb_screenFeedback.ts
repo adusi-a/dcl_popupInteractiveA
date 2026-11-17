@@ -65,7 +65,7 @@ function ensureShakeSystem(): void {
     // Try to read camera rotation (SDK 7.4.0+)
     let camRot = Quaternion.Identity()
     try {
-      const mc = MainCamera?.getOrNull(engine.PlayerEntity)
+      const mc = MainCamera?.getOrNull(engine.PlayerEntity) as any
       if (mc?.rotation) camRot = mc.rotation
     } catch {}
 
