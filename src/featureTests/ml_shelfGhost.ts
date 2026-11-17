@@ -50,13 +50,13 @@ interface ShelfGhostEntry {
   bookEntity:    ReturnType<typeof engine.addEntity>
   shelfPos:      Vector3        // rest position inside the shelf
   popPos:        Vector3        // position when "popped out"
-  throwDir:      Vector3        // unit vector along the aisle
+  throwDir:      {x:number; y:number; z:number}  // unit vector along the aisle
   triggerRadius: number         // metres — alert distance
   throwRadius:   number         // metres — throw distance
   state:         GhostState
   cooldownTimer: number         // seconds remaining in cooldown
   bookActive:    boolean
-  bookPos:       Vector3        // current book world position (for system)
+  bookPos:       {x:number; y:number; z:number}  // current book world position (for system)
   bookSpeed:     number         // m/s
   bookMaxRange:  number         // metres before book disappears
   bookTravelled: number         // accumulated distance
@@ -116,9 +116,9 @@ function ensureGhostSystem(): void {
             ghostT.position = Vector3.create(g.popPos.x, g.popPos.y, g.popPos.z)
             // Activate book
             g.bookActive = true
-            g.bookPos    = Vector3.create(g.popPos.x, g.popPos.y, g.popPos.z)
+            g.bookPos    = {x: g.popPos.x, y: g.popPos.y, z: g.popPos.z}
             g.bookTravelled = 0
-            bookT.position  = g.bookPos
+            bookT.position  = Vector3.create(g.bookPos.x, g.bookPos.y, g.bookPos.z)
             Material.setPbrMaterial(g.bookEntity, {
               albedoColor: Color4.create(0.9, 0.7, 0.1, 1),
               emissiveColor: { r: 0.3, g: 0.2, b: 0 }, emissiveIntensity: 0.4
