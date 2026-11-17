@@ -100,9 +100,10 @@ export function setupAUZoneAudio(): void {
       const a = AudioSource.getMutableOrNull(zoneAudio[i])
       if (!a) continue
       if (target > 0 && !a.playing) a.playing = true
-      const diff = target - a.volume
+      const curVol = a.volume ?? 0
+      const diff = target - curVol
       if (Math.abs(diff) > 0.01) {
-        a.volume = Math.max(0, Math.min(1, a.volume + Math.sign(diff) * FADE_SPEED * dt))
+        a.volume = Math.max(0, Math.min(1, curVol + Math.sign(diff) * FADE_SPEED * dt))
       } else {
         a.volume = target
         if (target <= 0 && a.playing) a.playing = false
@@ -248,6 +249,7 @@ export function setupAUPool(): void {
     const flashSys = engine.addSystem((dt: number) => {
       flashT -= dt
       if (flashT <= 0) {
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
         engine.removeSystem(flashSys)
         Material.setPbrMaterial(poolVisuals[slotIdx], { albedoColor: Color4.create(0.2, 0.2, 0.2, 1) })
       }
@@ -265,7 +267,9 @@ export function setupAUPool(): void {
   const burstBtn = createButton(x + 1, 0.8, z - 3.6, '⚡ Burst ×3', Color4.create(0.5, 0.3, 0.1, 1))
   pointerEventsSystem.onPointerDown({ entity: burstBtn, opts: { button: 1, hoverText: '[E] Burst 3 sounds' } }, () => {
     playFromPool()
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
     let t = 0.1; const s1 = engine.addSystem((dt: number) => { t -= dt; if (t <= 0) { engine.removeSystem(s1); playFromPool() } }, 5)
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
     let t2 = 0.2; const s2 = engine.addSystem((dt: number) => { t2 -= dt; if (t2 <= 0) { engine.removeSystem(s2); playFromPool() } }, 5)
   })
 
