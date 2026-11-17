@@ -35,7 +35,7 @@
 import {
   engine, Transform, MeshRenderer, MeshCollider, Material, TextShape, Billboard,
   pointerEventsSystem, TriggerArea, triggerAreaEventsSystem,
-  AvatarLocomotion, AvatarModifierArea, AvatarModifierType,
+  AvatarModifierArea, AvatarModifierType,
   ColliderLayer
 } from '@dcl/sdk/ecs'
 import { Vector3, Color4 } from '@dcl/sdk/math'
@@ -49,6 +49,7 @@ let AvatarLocomotionSettings: any
 try {
   // Dynamic-style comment: import { AvatarLocomotionSettings } from '@dcl/sdk/ecs'
   // Replace the try/catch with a direct import once SDK ≥ 7.24.3 is confirmed
+  // @ts-ignore — require works in DCL/esbuild QuickJS context
   AvatarLocomotionSettings = (require('@dcl/sdk/ecs') as any).AvatarLocomotionSettings
 } catch {
   AvatarLocomotionSettings = null
@@ -218,7 +219,7 @@ function createLocomotionZone(
       console.error('[T1] AvatarLocomotionSettings failed — may need AvatarModifierArea', e)
     }
   } else {
-    console.warn('[T1] AvatarLocomotionSettings not available — upgrade SDK to 7.24.3+')
+    console.error('[T1] AvatarLocomotionSettings not available — upgrade SDK to 7.24.3+')
   }
 
   const lbl = engine.addEntity()
