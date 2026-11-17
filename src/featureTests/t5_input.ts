@@ -32,15 +32,12 @@ import {
   engine, Transform, MeshRenderer, MeshCollider, Material, TextShape, Billboard,
   pointerEventsSystem, TriggerArea, triggerAreaEventsSystem,
   InputModifier, PointerLock, PrimaryPointerInfo,
-  inputSystem, ColliderLayer
+  inputSystem, ColliderLayer,
+  ModifierKey, InputModifierMode
 } from '@dcl/sdk/ecs'
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { InputAction, PointerEventType } from '@dcl/sdk/ecs'
 import { createStation, createButton, STATUS_COLOR } from './testUtils'
-
-// InputModifier modes
-  // @ts-ignore — require works in DCL/esbuild QuickJS context
-const { ModifierKey, InputModifierMode } = require('@dcl/sdk/ecs') as any
 
 export function setupInputTest(): void {
   const { x, z } = { x: 144, z: 22 }
