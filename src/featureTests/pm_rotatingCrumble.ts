@@ -113,17 +113,15 @@ export function setupPMRotating(): void {
     position: Vector3.create(x, CENTER_Y + 0.6, z),
     scale: Vector3.create(4.0, 1.0, 4.0)
   })
-  TriggerArea.create(triggerEntity, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(4.0, 1.0, 4.0) }]
-  })
+  TriggerArea.setBox(triggerEntity)
 
   let playerOnDisc = false
-  triggerAreaEventsSystem.onEnterArea(triggerEntity, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  triggerAreaEventsSystem.onTriggerEnter(triggerEntity, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     playerOnDisc = true; console.log('[PM3] Player ON rotating disc')
   })
-  triggerAreaEventsSystem.onExitArea(triggerEntity, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  triggerAreaEventsSystem.onTriggerExit(triggerEntity, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     playerOnDisc = false; console.log('[PM3] Player OFF rotating disc')
   })
 
@@ -255,19 +253,17 @@ export function setupPMCrumble(): void {
     position: Vector3.create(x, START_Y + 0.6, z),
     scale: Vector3.create(3.5, 0.9, 2.5)
   })
-  TriggerArea.create(trigger, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(3.5, 0.9, 2.5) }]
-  })
-  triggerAreaEventsSystem.onEnterArea(trigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  TriggerArea.setBox(trigger)
+  triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     if (state === 'solid') {
       state = 'crumbling'; timer = HOLD_TIME
       console.log('[PM4] CRUMBLING — player stepped on')
     }
     playerOnPlatform = true
   })
-  triggerAreaEventsSystem.onExitArea(trigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  triggerAreaEventsSystem.onTriggerExit(trigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     playerOnPlatform = false
     if (state === 'crumbling') {
       state = 'solid'  // player stepped off in time — reset
@@ -302,7 +298,7 @@ export function setupPMCrumble(): void {
         currentY = Math.max(START_Y - FALL_DEPTH, currentY - FALL_SPEED * dt)
         pt.position = Vector3.create(x, currentY, z)
         Transform.getMutable(trigger).position = Vector3.create(x, currentY + 0.6, z)
-        TextShape.getMutable(statusLbl).position = Vector3.create(x, currentY + 1.2, z)
+        Transform.getMutable(statusLbl).position = Vector3.create(x, currentY + 1.2, z)
         if (currentY <= START_Y - FALL_DEPTH) {
           state = 'reset_wait'; timer = RESET_WAIT
           TextShape.getMutable(statusLbl).text = '⬛ FALLEN'
@@ -319,7 +315,7 @@ export function setupPMCrumble(): void {
         currentY = Math.min(START_Y, currentY + RISE_SPEED * dt)
         pt.position = Vector3.create(x, currentY, z)
         Transform.getMutable(trigger).position = Vector3.create(x, currentY + 0.6, z)
-        TextShape.getMutable(statusLbl).position = Vector3.create(x, currentY + 1.2, z)
+        Transform.getMutable(statusLbl).position = Vector3.create(x, currentY + 1.2, z)
         TextShape.getMutable(statusLbl).text = '⬆ RISING'
         TextShape.getMutable(statusLbl).textColor = Color4.create(0.5, 1, 0.5, 1)
         if (currentY >= START_Y) {
