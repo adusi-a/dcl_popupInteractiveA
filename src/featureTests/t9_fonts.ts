@@ -41,13 +41,15 @@ import { ReactEcs, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { createStation, STATUS_COLOR } from './testUtils'
 
 // Font paths — place these files in assets/fonts/ before testing
-const FONT_LIBRARY   = 'assets/fonts/Cinzel-Regular.ttf'       // 🟨 ASSET NEEDED
-const FONT_INDUSTRIAL = 'assets/fonts/Oswald-Bold.ttf'          // 🟨 ASSET NEEDED
-const FONT_HORROR    = 'assets/fonts/Creepster-Regular.ttf'     // 🟨 ASSET NEEDED
+// NOTE: Variable fonts placed — renders at default weight (regular), not bold for Oswald.
+// If bold weight is critical for OreMonger, swap Oswald-VariableFont_wght.ttf for a static Oswald-Bold.ttf.
+const FONT_LIBRARY   = 'assets/fonts/Cinzel-VariableFont_wght.ttf'   // ✅ placed
+const FONT_INDUSTRIAL = 'assets/fonts/Oswald-VariableFont_wght.ttf'  // ✅ placed (variable — renders regular weight)
+const FONT_HORROR    = 'assets/fonts/Creepster-Regular.ttf'          // ✅ placed
 
 export function setupFontsTest(): void {
   const { x, z } = { x: 132, z: 50 }
-  createStation('t9_fonts', 'T9 — CUSTOM FONTS\nfontSrc .ttf (SDK 7.31+)', STATUS_COLOR.NEEDS_ASSET)
+  createStation('t9_fonts', 'T9 — CUSTOM FONTS\nfontSrc .ttf (SDK 7.31+)', STATUS_COLOR.FULLY_CODED)
 
   // ─── A) Built-in font comparison (baseline — always works) ────────────────
   const baselines = [
@@ -130,8 +132,8 @@ export function setupFontsTest(): void {
 
   console.log('[T9] Fonts test station initialized')
   console.log('[T9] 🟨 ASSETS NEEDED (place in assets/fonts/):')
-  console.log('[T9]   Cinzel-Regular.ttf     — fonts.google.com/specimen/Cinzel')
-  console.log('[T9]   Oswald-Bold.ttf        — fonts.google.com/specimen/Oswald')
+  console.log('[T9]   Cinzel-VariableFont_wght.ttf  — placed ✔')
+  console.log('[T9]   Oswald-VariableFont_wght.ttf   — placed ✔ (variable font, renders at regular weight)')
   console.log('[T9]   Creepster-Regular.ttf  — fonts.google.com/specimen/Creepster')
   console.log('[T9]   All are OFL licensed (safe to redistribute with the scene)')
   console.log('[T9]   SDK minimum: 7.31.0 (fontSrc field not available on older SDK)')
