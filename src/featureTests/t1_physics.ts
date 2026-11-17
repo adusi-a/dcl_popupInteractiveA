@@ -125,16 +125,25 @@ export function setupPhysicsTest(): void {
   })
   TriggerArea.setBox(windZoneTrigger)
 
+  // Per-frame pattern for continuous force (more reliable than enter/exit events)
+  // onTriggerExit is documented as NEEDS_TEST — if it doesn't fire, force persists globally.
+  // Using per-frame system instead: apply force ONLY on frames the player is in zone.
+  let playerInWind = false
   triggerAreaEventsSystem.onTriggerEnter(windZoneTrigger, (e) => {
     if (e.trigger?.entity !== engine.PlayerEntity) return
-    console.log('[T1] Entered wind zone — applying upward force')
-    Physics.applyForceToPlayer(windEntity, Vector3.create(0, 4, 0))
+    playerInWind = true
+    console.log('[T1] Entered wind zone')
   })
   triggerAreaEventsSystem.onTriggerExit(windZoneTrigger, (e) => {
     if (e.trigger?.entity !== engine.PlayerEntity) return
-    console.log('[T1] Left wind zone — removing force')
-    Physics.removeForceFromPlayer(windEntity)
+    playerInWind = false
+    Physics.removeForceFromPlayer(windEntity)  // belt-and-suspenders cleanup
+    console.log('[T1] Left wind zone')
   })
+  engine.addSystem((_dt: number) => {
+    if (!playerInWind) return
+    Physics.applyForceToPlayer(windEntity, Vector3.create(0, 4, 0))
+  }, 1)
 
   const windLabel = engine.addEntity()
   Transform.create(windLabel, { position: Vector3.create(x + 2.5, 3.5, z - 1) })
