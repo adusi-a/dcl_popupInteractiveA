@@ -39,6 +39,7 @@ import { InputAction, PointerEventType } from '@dcl/sdk/ecs'
 import { createStation, createButton, STATUS_COLOR } from './testUtils'
 
 // InputModifier modes
+  // @ts-ignore — require works in DCL/esbuild QuickJS context
 const { ModifierKey, InputModifierMode } = require('@dcl/sdk/ecs') as any
 
 export function setupInputTest(): void {
@@ -135,8 +136,8 @@ export function setupInputTest(): void {
 
     // C: Primary pointer world ray
     const ppi = PrimaryPointerInfo.getOrNull(engine.CameraEntity)
-    if (ppi?.hit) {
-      const p = ppi.hit.position ?? { x: 0, y: 0, z: 0 }
+    if ((ppi as any)?.hit) {
+      const p = (ppi as any).hit.position ?? { x: 0, y: 0, z: 0 }
       TextShape.getMutable(ptrInfoLabel).text =
         `Hit: (${p.x?.toFixed(1)}, ${p.y?.toFixed(1)}, ${p.z?.toFixed(1)})`
     } else {
