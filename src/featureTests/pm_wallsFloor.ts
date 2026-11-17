@@ -402,7 +402,9 @@ export function setupPMFan(): void {
   })
   triggerAreaEventsSystem.onTriggerExit(windZone, (r) => {
     if (r.trigger?.entity !== engine.PlayerEntity) return
-    playerInZone = false; console.log('[PM9] Player left fan zone')
+    playerInZone = false
+    Physics.removeForceFromPlayer(engine.RootEntity)
+    console.log('[PM9] Player left fan zone')
   })
 
   // Zone visual (green outline of wind area)
