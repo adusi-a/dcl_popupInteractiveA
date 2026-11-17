@@ -54,7 +54,7 @@ export function setupCBBeamGate(): void {
   const beamEntity = engine.addEntity()
   Transform.create(beamEntity, {
     position: Vector3.create(x, BEAM_Y, z),
-    scale: Vector3.create(0.08, 0.08, BEAM_LENGTH)
+    scale: Vector3.create(BEAM_LENGTH, 0.08, 0.08)
   })
   MeshRenderer.setBox(beamEntity)
   Material.setPbrMaterial(beamEntity, {
@@ -83,7 +83,7 @@ export function setupCBBeamGate(): void {
   const beamTrigger = engine.addEntity()
   Transform.create(beamTrigger, {
     position: Vector3.create(x, BEAM_Y, z),
-    scale: Vector3.create(0.4, 1.5, BEAM_LENGTH)
+    scale: Vector3.create(BEAM_LENGTH, 1.5, 0.4)
   })
   TriggerArea.setBox(beamTrigger)
 
