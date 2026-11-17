@@ -250,7 +250,7 @@ export function setupCBProximityMine(): void {
             const dist = Math.sqrt(dx*dx + dz*dz)
             if (dist < BLAST_RADIUS) {
               const nx = dist > 0.1 ? dx / dist : 0.5; const nz = dist > 0.1 ? dz / dist : 0.5
-              Physics.applyKnockbackToPlayer({ direction: Vector3.create(nx, 0.6, nz), falloff: 1, magnitude: 15 })
+              Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 15)
               console.log('[CB2] BLAST HIT — knockback!')
             }
           }
