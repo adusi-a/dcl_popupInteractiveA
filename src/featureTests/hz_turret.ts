@@ -84,8 +84,8 @@ function rotateTurretToward(
 interface BulletEntry {
   entity:  ReturnType<typeof engine.addEntity>
   active:  boolean
-  pos:     Vector3
-  dir:     Vector3
+  pos:     {x:number; y:number; z:number}
+  dir:     {x:number; y:number; z:number}
   speed:   number
   elapsed: number
   maxTime: number
