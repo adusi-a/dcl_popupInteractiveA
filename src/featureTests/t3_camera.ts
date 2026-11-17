@@ -76,7 +76,7 @@ export function setupCameraTest(): void {
   })
   CameraModeArea.create(fpZone, {
     area: Vector3.create(4, 4, 7),
-    cameraMode: CameraMode.CM_FIRST_PERSON
+    mode: 1  // CameraType.CT_FIRST_PERSON = 1 in SDK 7.33
   })
 
   // ─── B) VirtualCamera Cutscene ────────────────────────────────────────────
@@ -193,7 +193,7 @@ export function setupCameraTest(): void {
     if (!cameraModeLabel) return
     const camera = MainCamera.getOrNull(engine.CameraEntity)
     if (!camera) return
-    const modeText = camera.cameraMode === CameraMode.CM_FIRST_PERSON
+    const modeText = (camera as any).mode === 1  // CT_FIRST_PERSON
       ? '🎥 FIRST PERSON'
       : '🎥 THIRD PERSON'
     if (modeText !== currentCameraMode) {
