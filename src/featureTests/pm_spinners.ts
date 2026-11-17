@@ -59,7 +59,7 @@
 
 import {
   engine, Transform, MeshRenderer, MeshCollider, Material, TextShape, Billboard,
-  pointerEventsSystem
+  pointerEventsSystem, ColliderLayer
 } from '@dcl/sdk/ecs'
 import { Vector3, Color4, Quaternion } from '@dcl/sdk/math'
 import { Physics } from '@dcl/sdk/ecs'
@@ -305,10 +305,7 @@ export function setupPMPendulum(): void {
       if (dist < 1.2) {
         // Knockback in SWING direction (velocity of bob, not just away from center)
         const swingDirX = Math.sign(dAngle) * Math.cos(angleRad)  // swing velocity direction
-        Physics.applyKnockbackToPlayer({
-          direction: Vector3.create(swingDirX, 0.3, 0),
-          falloff: 1, magnitude: 12
-        })
+        Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 12)
         immunity.value = 1.0
         TextShape.getMutable(hitSign).text = '💥 WHAM!'
         setTimeout(() => { TextShape.getMutable(hitSign).text = '' }, 1000)
