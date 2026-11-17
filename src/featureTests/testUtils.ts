@@ -282,9 +282,7 @@ export function createHazardZoneEntrance(): void {
   })
   Billboard.create(arch, {})
   TextShape.create(arch, {
-    text: '⚡ HAZARD ZONE
-🟩 Spikes  🟩 Darts  🟩 Disappear Floor
-🟩 Bomb Throw  🟩 Turrets  🟩 Thwomp',
+    text: '⚡ HAZARD ZONE\n🟩 Spikes  🟩 Darts  🟩 Disappear Floor\n🟩 Bomb Throw  🟩 Turrets  🟩 Thwomp',
     fontSize: 2.5,
     textColor: Color4.create(1, 0.3, 0.3, 1),
     outlineColor: Color4.Black(),
