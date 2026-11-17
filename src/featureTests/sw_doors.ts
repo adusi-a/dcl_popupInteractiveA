@@ -190,11 +190,9 @@ export function setupSWDoor(): void {
     position: Vector3.create(x - 0.75, 1.0, z - 1.0),
     scale: Vector3.create(2.0, 2.0, 2.5)
   })
-  TriggerArea.create(proxTrigger, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(2.0, 2.0, 2.5) }]
-  })
-  triggerAreaEventsSystem.onEnterArea(proxTrigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  TriggerArea.setBox(proxTrigger)
+  triggerAreaEventsSystem.onTriggerEnter(proxTrigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     if (door.state === 'closed') openDoor(door)
   })
 
@@ -281,9 +279,7 @@ export function setupSWKeyLock(): void {
     position: Vector3.create(x + 2.5, 1.0, z + 1.5),
     scale: Vector3.create(1.2, 1.5, 1.2)
   })
-  TriggerArea.create(keyTrigger, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(1.2, 1.5, 1.2) }]
-  })
+  TriggerArea.setBox(keyTrigger)
 
   // Locked door
   const lockedDoor = buildDoor(x - 1.0, 1.0, z - 2.5, 1.4, 2.0, 0.25, false, 0, 2.0)
@@ -302,8 +298,8 @@ export function setupSWKeyLock(): void {
   TextShape.create(doorStatus, { text: '', fontSize: 1.3, textColor: Color4.create(0.3, 1, 0.5, 1) })
 
   // Key collection
-  triggerAreaEventsSystem.onEnterArea(keyTrigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  triggerAreaEventsSystem.onTriggerEnter(keyTrigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     if (!keyVisible) return
     keyVisible = false
     inventory.add(KEY_ID)
