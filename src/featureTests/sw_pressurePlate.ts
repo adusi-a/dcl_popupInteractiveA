@@ -170,15 +170,13 @@ export function setupSWPressurePlate(): void {
     position: Vector3.create(x - 1.0, 0.8, z),
     scale: Vector3.create(1.6, 0.6, 1.6)
   })
-  TriggerArea.create(trigger, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(1.6, 0.6, 1.6) }]
-  })
-  triggerAreaEventsSystem.onEnterArea(trigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  TriggerArea.setBox(trigger)
+  triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     if (!driver.activated) { driver.activated = true; driver.onActivate() }
   })
-  triggerAreaEventsSystem.onExitArea(trigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  triggerAreaEventsSystem.onTriggerExit(trigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     driver.onDeactivate()
   })
 
