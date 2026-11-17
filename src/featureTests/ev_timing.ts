@@ -120,6 +120,7 @@ function startPulse(
     if (timer >= intervalSeconds) {
       timer = 0; remaining--
       onPulse(remaining)
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
       if (remaining <= 0) { engine.removeSystem(sys); onDone() }
     }
   }, 5)
