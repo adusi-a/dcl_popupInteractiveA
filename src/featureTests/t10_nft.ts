@@ -102,9 +102,8 @@ export function setupNFTTest(): void {
   })
   NftShape.create(nftFrame, {
     urn: NFT_DISPLAY_SRC,     // 🟨 Replace with real contract+token
-    frame: NftFrameType.NFT_CLASSIC,
     color: Color3.create(0.8, 0.6, 0.1)   // gold tint
-  })
+  } as any)
   MeshCollider.setBox(nftFrame, ColliderLayer.CL_POINTER)
 
   const nftLabel = engine.addEntity()
@@ -131,7 +130,6 @@ export function setupNFTTest(): void {
     })
     NftShape.create(frame, {
       urn: NFT_DISPLAY_SRC,
-      frame: type,
       color: Color3.create(0.7, 0.5, 0.1)
     })
 
@@ -178,7 +176,9 @@ export function setupNFTTest(): void {
     textColor: Color4.White(), outlineColor: Color4.Black(), outlineWidth: 0.1
   })
 
+  // @ts-ignore — require works in DCL/esbuild QuickJS context
   const { pointerEventsSystem } = require('@dcl/sdk/ecs') as any
+  // @ts-ignore — require works in DCL/esbuild QuickJS context
   const { InputAction } = require('@dcl/sdk/ecs') as any
   pointerEventsSystem.onPointerDown(
     { entity: gateViz, opts: { button: InputAction.IA_PRIMARY, hoverText: 'Enter Gated Area' } },
