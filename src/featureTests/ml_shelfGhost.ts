@@ -241,13 +241,13 @@ export function setupMLShelfGhost(): void {
     ghostEntity, bookEntity,
     shelfPos: Vector3.create(shelfPos.x, shelfPos.y, shelfPos.z),
     popPos:   Vector3.create(popPos.x,   popPos.y,   popPos.z),
-    throwDir: Vector3.create(throwDir.x, throwDir.y, throwDir.z),
+    throwDir: {x: throwDir.x, y: throwDir.y, z: throwDir.z},
     triggerRadius: 4.0,
     throwRadius:   2.5,
     state: 'sleeping',
     cooldownTimer: 0,
     bookActive: false,
-    bookPos: Vector3.create(shelfPos.x, shelfPos.y, shelfPos.z),
+    bookPos: {x: shelfPos.x, y: shelfPos.y, z: shelfPos.z},
     bookSpeed: 6.0,     // m/s — fast enough to feel dangerous
     bookMaxRange: 7.0,  // metres before despawn
     bookTravelled: 0
