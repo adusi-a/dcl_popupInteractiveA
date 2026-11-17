@@ -167,11 +167,9 @@ function createCheckpointRing(pos: Vector3, number: number, onActivate: (pos: Ve
     position: Vector3.create(pos.x, pos.y + 0.6, pos.z),
     scale: Vector3.create(1.6, 1.4, 1.6)
   })
-  TriggerArea.create(trigger, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(1.6, 1.4, 1.6) }]
-  })
-  triggerAreaEventsSystem.onEnterArea(trigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  TriggerArea.setBox(trigger)
+  triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     if (!activated) {
       activated = true
       onActivate(pos)
@@ -261,13 +259,11 @@ export function setupSWCollectibles(): void {
       position: Vector3.create(gp.x, gp.y, gp.z),
       scale: Vector3.create(1.2, 1.2, 1.2)
     })
-    TriggerArea.create(trigger, {
-      triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(1.2, 1.2, 1.2) }]
-    })
+    TriggerArea.setBox(trigger)
 
     const idx = i
-    triggerAreaEventsSystem.onEnterArea(trigger, (r) => {
-      if (r.otherEntity !== engine.PlayerEntity) return
+    triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => {
+      if (r.trigger?.entity !== engine.PlayerEntity) return
       if (gemCollected[idx]) return
       gemCollected[idx] = true
       collectedCount++
