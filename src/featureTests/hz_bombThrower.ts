@@ -61,13 +61,13 @@ const GRAVITY = -9.0
 // ─── Arc projectile math ─────────────────────────────────────────────────────
 
 function calculateLobVelocity(
-  start: Vector3, target: Vector3, flightTime: number
-): Vector3 {
-  return Vector3.create(
-    (target.x - start.x) / flightTime,
-    (target.y - start.y - 0.5 * GRAVITY * flightTime * flightTime) / flightTime,
-    (target.z - start.z) / flightTime
-  )
+  start: {x:number;y:number;z:number}, target: {x:number;y:number;z:number}, flightTime: number
+): {x:number; y:number; z:number} {
+  return {
+    x: (target.x - start.x) / flightTime,
+    y: (target.y - start.y - 0.5 * GRAVITY * flightTime * flightTime) / flightTime,
+    z: (target.z - start.z) / flightTime
+  }
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -75,8 +75,8 @@ function calculateLobVelocity(
 interface BombState {
   entity:  ReturnType<typeof engine.addEntity>
   active:  boolean
-  pos:     Vector3
-  vel:     Vector3
+  pos:     {x:number; y:number; z:number}
+  vel:     {x:number; y:number; z:number}
   elapsed: number
   maxTime: number  // kill bomb after this many seconds (safety net)
 }
@@ -168,7 +168,7 @@ export function setupHZBombThrower(): void {
   const throwOrigin = Vector3.create(x, 2.0, z - 2.8)  // throw from NPC's "hand"
   const bombState: BombState = {
     entity: bombEntity, active: false,
-    pos: Vector3.create(x, -50, z),
+    pos: {x, y:-50, z},
     vel: Vector3.Zero(),
     elapsed: 0, maxTime: 8
   }
@@ -203,7 +203,7 @@ export function setupHZBombThrower(): void {
       // Calculate launch velocity
       const vel = calculateLobVelocity(throwOrigin, target, flightTime)
       bombState.active  = true
-      bombState.pos     = Vector3.create(throwOrigin.x, throwOrigin.y, throwOrigin.z)
+      bombState.pos = {x: throwOrigin.x, y: throwOrigin.y, z: throwOrigin.z}
       bombState.vel     = vel
       bombState.elapsed = 0
 
@@ -248,10 +248,7 @@ export function setupHZBombThrower(): void {
         const dz = pT.position.z - bombState.pos.z
         const dist = Math.sqrt(dx*dx + dz*dz)
         if (dist < 1.0) {
-          Physics.applyKnockbackToPlayer({
-            direction: Vector3.create(dx / dist, 0.5, dz / dist),
-            falloff: 1, magnitude: 12
-          })
+          Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 12)
           console.log('[HZ6] BOMB HIT — knockback!')
           detonate()
           return
