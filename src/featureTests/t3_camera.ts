@@ -149,6 +149,7 @@ export function setupCameraTest(): void {
       const releaseSys = engine.addSystem((dt) => {
         elapsed += dt
         if (elapsed > 4) {
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
           engine.removeSystem(releaseSys)
           VirtualCamera.deleteFrom(vcam)
           console.log('[T3] Cutscene ended — camera control returned')
