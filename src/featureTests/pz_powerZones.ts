@@ -75,7 +75,7 @@ export function setupPZAntiGrav(): void {
   Transform.create(trigger, { position: Vector3.create(x, 2.0, z), scale: Vector3.create(4.5, 4.5, 4.5) })
   TriggerArea.setBox(trigger)
   triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => { if (r.trigger?.entity === engine.PlayerEntity) { inZone = true; console.log('[PZ2] Anti-grav ON') } })
-  triggerAreaEventsSystem.onTriggerExit(trigger, (r) => { if (r.trigger?.entity === engine.PlayerEntity) { inZone = false; console.log('[PZ2] Anti-grav OFF') } })
+  triggerAreaEventsSystem.onTriggerExit(trigger, (r) => { if (r.trigger?.entity === engine.PlayerEntity) { inZone = false; Physics.removeForceFromPlayer(engine.RootEntity); console.log('[PZ2] Anti-grav OFF') } })
 
   engine.addSystem((_dt: number) => {
     if (!inZone) return
@@ -179,7 +179,7 @@ export function setupPZSpeedPad(): void {
   Transform.create(trigger, { position: Vector3.create(x, 0.9, z), scale: Vector3.create(2.5, 1.0, 5.0) })
   TriggerArea.setBox(trigger)
   triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => { if (r.trigger?.entity === engine.PlayerEntity) onPad = true })
-  triggerAreaEventsSystem.onTriggerExit(trigger, (r) => { if (r.trigger?.entity === engine.PlayerEntity) onPad = false })
+  triggerAreaEventsSystem.onTriggerExit(trigger, (r) => { if (r.trigger?.entity === engine.PlayerEntity) { onPad = false; Physics.removeForceFromPlayer(engine.RootEntity) } })
 
   const BOOST = 25
   engine.addSystem((_dt: number) => {
