@@ -79,13 +79,13 @@ function setupPlatformTrigger(
   TriggerArea.create(state.triggerEntity, {
     triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(triggerSize.x, triggerSize.y, triggerSize.z) }]
   })
-  triggerAreaEventsSystem.onEnterArea(state.triggerEntity, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  triggerAreaEventsSystem.onTriggerEnter(state.triggerEntity, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     state.playerOn = true
     console.log('[PM] Player ON platform')
   })
-  triggerAreaEventsSystem.onExitArea(state.triggerEntity, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  triggerAreaEventsSystem.onTriggerExit(state.triggerEntity, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     state.playerOn = false
     console.log('[PM] Player OFF platform')
   })
@@ -174,8 +174,8 @@ export function setupPMPingPong(): void {
   const rideState: RidePlatformState = {
     entity: platform,
     triggerEntity,
-    currentPos: Vector3.create(x - TRACK_HALF, 0.75, z),
-    lastPos:    Vector3.create(x - TRACK_HALF, 0.75, z),
+    currentPos: {x: x - TRACK_HALF, y: 0.75, z: z},
+    lastPos: {x: x - TRACK_HALF, y: 0.75, z: z},
     playerOn: false
   }
   setupPlatformTrigger(rideState, PLAT_SIZE, 0.5)
@@ -282,8 +282,8 @@ export function setupPMElevator(): void {
 
   const rideState: RidePlatformState = {
     entity: car, triggerEntity,
-    currentPos: Vector3.create(x, FLOORS[0], z),
-    lastPos:    Vector3.create(x, FLOORS[0], z),
+    currentPos: {x: x, y: FLOORS[0], z: z},
+    lastPos: {x: x, y: FLOORS[0], z: z},
     playerOn: false
   }
   setupPlatformTrigger(rideState, Vector3.create(2.2, 1.0, 2.2), 0.6)
