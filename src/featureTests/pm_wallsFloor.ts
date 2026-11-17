@@ -161,7 +161,7 @@ export function setupPMSqueezeWalls(): void {
         // Check if player is in danger zone
         const pT = Transform.getOrNull(engine.PlayerEntity)
         if (pT && hitImmunity <= 0 && Math.abs(pT.position.x - x) < currentHalfX + 0.5) {
-          Physics.applyKnockbackToPlayer({ direction: Vector3.create(pT.position.x > x ? 1 : -1, 0.2, 0), falloff: 1, magnitude: 10 })
+          Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 10)
           hitImmunity = 0.8
           console.log('[PM7] SQUEEZE HIT — knockback sideways')
         }
@@ -395,15 +395,13 @@ export function setupPMFan(): void {
     position: Vector3.create(x, 1.0, z + 0.5),
     scale: Vector3.create(2.5, 2.5, 7.0)
   })
-  TriggerArea.create(windZone, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(2.5, 2.5, 7.0) }]
-  })
-  triggerAreaEventsSystem.onEnterArea(windZone, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  TriggerArea.setBox(windZone)
+  triggerAreaEventsSystem.onTriggerEnter(windZone, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     playerInZone = true; console.log('[PM9] Player in fan zone — force applying')
   })
-  triggerAreaEventsSystem.onExitArea(windZone, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  triggerAreaEventsSystem.onTriggerExit(windZone, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     playerInZone = false; console.log('[PM9] Player left fan zone')
   })
 
@@ -429,9 +427,8 @@ export function setupPMFan(): void {
       Transform.getMutable(blades[i]).rotation = Quaternion.fromEulerDegrees(0, 0, bladeAngle + i * 120)
     }
     if (playerInZone) {
-      Physics.applyForceToPlayer({
-        force: Vector3.create(fanDirection.x * fanForce, fanDirection.y * fanForce, fanDirection.z * fanForce)
-      })
+      Physics.applyForceToPlayer(engine.RootEntity, Vector3.create(fanDirection.x * fanForce, fanDirection.y * fanForce, fanDirection.z * fanForce)
+      )
     }
   }, 10)
 
