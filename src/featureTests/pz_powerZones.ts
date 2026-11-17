@@ -17,8 +17,7 @@
 
 import {
   engine, Transform, MeshRenderer, MeshCollider, Material, TextShape, Billboard,
-  TriggerArea, triggerAreaEventsSystem, ColliderLayer, pointerEventsSystem,
-  AvatarLocomotion
+  TriggerArea, triggerAreaEventsSystem, ColliderLayer, pointerEventsSystem
 } from '@dcl/sdk/ecs'
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { Physics } from '@dcl/sdk/ecs'
@@ -42,16 +41,16 @@ export function setupPZTrampoline(): void {
   let onPad = false; let bounceTimer = 0
   const trigger = engine.addEntity()
   Transform.create(trigger, { position: Vector3.create(x, 0.9, z), scale: Vector3.create(4, 1.0, 4) })
-  TriggerArea.create(trigger, { triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(4, 1.0, 4) }] })
-  triggerAreaEventsSystem.onEnterArea(trigger, (r) => { if (r.otherEntity === engine.PlayerEntity) { onPad = true; bounceTimer = 0 } })
-  triggerAreaEventsSystem.onExitArea(trigger, (r) => { if (r.otherEntity === engine.PlayerEntity) onPad = false })
+  TriggerArea.setBox(trigger)
+  triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => { if (r.trigger?.entity === engine.PlayerEntity) { onPad = true; bounceTimer = 0 } })
+  triggerAreaEventsSystem.onTriggerExit(trigger, (r) => { if (r.trigger?.entity === engine.PlayerEntity) onPad = false })
 
   engine.addSystem((dt: number) => {
     if (!onPad) return
     bounceTimer += dt
     if (bounceTimer > 0.4) {  // bounce every 0.4s while on pad
       bounceTimer = 0
-      Physics.applyImpulseToPlayer({ impulse: Vector3.create(0, 12, 0) })
+      Physics.applyImpulseToPlayer(Vector3.create(0, 12, 0) )
       console.log('[PZ1] BOUNCE!')
     }
   }, 10)
@@ -74,13 +73,13 @@ export function setupPZAntiGrav(): void {
   let inZone = false
   const trigger = engine.addEntity()
   Transform.create(trigger, { position: Vector3.create(x, 2.0, z), scale: Vector3.create(4.5, 4.5, 4.5) })
-  TriggerArea.create(trigger, { triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(4.5, 4.5, 4.5) }] })
-  triggerAreaEventsSystem.onEnterArea(trigger, (r) => { if (r.otherEntity === engine.PlayerEntity) { inZone = true; console.log('[PZ2] Anti-grav ON') } })
-  triggerAreaEventsSystem.onExitArea(trigger, (r) => { if (r.otherEntity === engine.PlayerEntity) { inZone = false; console.log('[PZ2] Anti-grav OFF') } })
+  TriggerArea.setBox(trigger)
+  triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => { if (r.trigger?.entity === engine.PlayerEntity) { inZone = true; console.log('[PZ2] Anti-grav ON') } })
+  triggerAreaEventsSystem.onTriggerExit(trigger, (r) => { if (r.trigger?.entity === engine.PlayerEntity) { inZone = false; console.log('[PZ2] Anti-grav OFF') } })
 
   engine.addSystem((_dt: number) => {
     if (!inZone) return
-    Physics.applyForceToPlayer({ force: Vector3.create(0, 15, 0) })  // counteracts gravity (~9.8) and then some
+    Physics.applyForceToPlayer(engine.RootEntity, Vector3.create(0, 15, 0) )  // counteracts gravity (~9.8) and then some
   }, 10)
 }
 
@@ -107,7 +106,7 @@ export function setupPZRepulsor(): void {
     if (dist > RANGE) return
     const strength = (1 - dist / RANGE) * FORCE  // stronger closer to center
     const nx = dist > 0.1 ? dx / dist : 1; const nz = dist > 0.1 ? dz / dist : 0
-    Physics.applyForceToPlayer({ force: Vector3.create(nx * strength, 0.5, nz * strength) })
+    Physics.applyForceToPlayer(engine.RootEntity, Vector3.create(nx * strength, 0.5, nz * strength) )
   }, 10)
 
   // Ring visual
@@ -142,7 +141,7 @@ export function setupPZAttractor(): void {
     const strength = (1 - dist / RANGE) * FORCE
     // INWARD = negative direction (toward center)
     const nx = dist > 0.1 ? -dx / dist : 0; const nz = dist > 0.1 ? -dz / dist : 0
-    Physics.applyForceToPlayer({ force: Vector3.create(nx * strength, 0, nz * strength) })
+    Physics.applyForceToPlayer(engine.RootEntity, Vector3.create(nx * strength, 0, nz * strength) )
   }, 10)
 
   for (let i = 0; i < 20; i++) {
@@ -178,14 +177,14 @@ export function setupPZSpeedPad(): void {
   let onPad = false
   const trigger = engine.addEntity()
   Transform.create(trigger, { position: Vector3.create(x, 0.9, z), scale: Vector3.create(2.5, 1.0, 5.0) })
-  TriggerArea.create(trigger, { triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(2.5, 1.0, 5.0) }] })
-  triggerAreaEventsSystem.onEnterArea(trigger, (r) => { if (r.otherEntity === engine.PlayerEntity) onPad = true })
-  triggerAreaEventsSystem.onExitArea(trigger, (r) => { if (r.otherEntity === engine.PlayerEntity) onPad = false })
+  TriggerArea.setBox(trigger)
+  triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => { if (r.trigger?.entity === engine.PlayerEntity) onPad = true })
+  triggerAreaEventsSystem.onTriggerExit(trigger, (r) => { if (r.trigger?.entity === engine.PlayerEntity) onPad = false })
 
   const BOOST = 25
   engine.addSystem((_dt: number) => {
     if (!onPad) return
-    Physics.applyForceToPlayer({ force: Vector3.create(padDir.x * BOOST, 0, padDir.z * BOOST) })
+    Physics.applyForceToPlayer(engine.RootEntity, Vector3.create(padDir.x * BOOST, 0, padDir.z * BOOST) )
   }, 10)
 
   const info = engine.addEntity(); Transform.create(info, { position: Vector3.create(x, 3.5, z) }); Billboard.create(info, {})
