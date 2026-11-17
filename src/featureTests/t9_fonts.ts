@@ -114,6 +114,7 @@ export function setupFontsTest(): void {
   // in this scene via UiManager, so we just add an extra element.
   // If font files are missing, this shows the fallback font.
 
+  // @ts-ignore — require works in DCL/esbuild QuickJS context
   const { ReactEcsRenderer } = require('@dcl/sdk/react-ecs') as any
   // The UI renderer is already set up by UiManager in this scene.
   // Adding a secondary renderer would conflict.
