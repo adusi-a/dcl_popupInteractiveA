@@ -29,7 +29,7 @@ import { emit } from './ev_eventBus'
 
 // ─── Station: EV6 — Rate Limiter ──────────────────────────────────────────────
 
-interface RateLimiter { cooldownSeconds: number; lastFired: number; onFire: (count: number) => void }
+interface RateLimiter { cooldownSeconds: number; lastFired: number; onFire: (count: number) => void; _count?: number }
 
 function tryFire(limiter: RateLimiter): boolean {
   const now = Date.now() / 1000
@@ -39,7 +39,7 @@ function tryFire(limiter: RateLimiter): boolean {
   limiter.onFire(limiter._count)
   return true
 }
-declare module './ev_timing' { interface RateLimiter { _count?: number } }
+
 
 export function setupEVRateLimiter(): void {
   const { x, z } = { x: 96, z: 70 }
@@ -62,7 +62,7 @@ export function setupEVRateLimiter(): void {
   let totalAttempts = 0
   let cooldownSeconds = 2.0
 
-  const limiter: RateLimiter & { _count?: number } = {
+  const limiter: RateLimiter = {
     cooldownSeconds, lastFired: 0,
     onFire: (count) => {
       TextShape.getMutable(hitCounter).text = `Fires: ${count}\nAttempts: ${totalAttempts}`
