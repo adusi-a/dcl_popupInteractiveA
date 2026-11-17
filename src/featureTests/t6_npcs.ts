@@ -50,12 +50,13 @@ let NPC: any
 let NPCType: any
 let NPCBodyShape: any
 try {
+  // @ts-ignore — require works in DCL/esbuild QuickJS context
   const toolkit = require('dcl-npc-toolkit') as any
   NPC = toolkit.NPC
   NPCType = toolkit.NPCType
   NPCBodyShape = toolkit.NPCBodyShape
 } catch (e) {
-  console.warn('[T6] dcl-npc-toolkit not installed — run: npm install dcl-npc-toolkit')
+  console.error('[T6] dcl-npc-toolkit not installed — run: npm install dcl-npc-toolkit')
 }
 
 const NPC_GLB = 'assets/models/npc_guard.glb'  // ✅ placed (bipedA from GhostTown V1)
