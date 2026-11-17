@@ -60,7 +60,7 @@ function updateHpBar(entry: DamageableEntry): void {
   const frac = entry.currentHp / entry.maxHp
   const barT = Transform.getMutableOrNull(entry.barFg)
   if (barT) {
-    barT.scale.x = entry.barWidth * frac
+    barT.scale = Vector3.create(entry.barWidth * frac, 0.2, 0.08)
     barT.position.x = (Transform.getOrNull(entry.entity)?.position.x ?? 0) - entry.barWidth * (1 - frac) * 0.5
   }
   // Color: green → yellow → red
