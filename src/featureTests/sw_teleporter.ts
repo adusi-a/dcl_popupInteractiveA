@@ -123,13 +123,11 @@ export function setupSWTeleporter(): void {
       position: Vector3.create(portal.pos.x, portal.pos.y + 0.6, portal.pos.z),
       scale: Vector3.create(1.6, 1.4, 1.6)
     })
-    TriggerArea.create(trigger, {
-      triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(1.6, 1.4, 1.6) }]
-    })
+    TriggerArea.setBox(trigger)
 
     const dest = portal.dest
-    triggerAreaEventsSystem.onEnterArea(trigger, (r) => {
-      if (r.otherEntity !== engine.PlayerEntity) return
+    triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => {
+      if (r.trigger?.entity !== engine.PlayerEntity) return
       const now = Date.now() / 1000
       if (now - lastTeleportTime < COOLDOWN) return
       lastTeleportTime = now
@@ -329,18 +327,16 @@ export function setupSWWeightPlatform(): void {
     position: Vector3.create(x, MAX_Y + 0.5, z),
     scale: Vector3.create(3.5, 0.6, 3.5)
   })
-  TriggerArea.create(trigger, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(3.5, 0.6, 3.5) }]
-  })
-  triggerAreaEventsSystem.onEnterArea(trigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  TriggerArea.setBox(trigger)
+  triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     playerOnPlatform = true
     TextShape.getMutable(statusLbl).text = '⬇ SINKING'
     TextShape.getMutable(statusLbl).textColor = Color4.create(1, 0.4, 0.4, 1)
     console.log('[SW9] Player on platform — sinking')
   })
-  triggerAreaEventsSystem.onExitArea(trigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  triggerAreaEventsSystem.onTriggerExit(trigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     playerOnPlatform = false
     TextShape.getMutable(statusLbl).text = '🔼 RISING'
     TextShape.getMutable(statusLbl).textColor = Color4.create(0.5, 1, 0.5, 1)
