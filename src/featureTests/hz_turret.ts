@@ -105,15 +105,15 @@ function initBulletPool(count: number): void {
       albedoColor: Color4.create(1, 0.9, 0, 1),
       emissiveColor: { r: 0.8, g: 0.7, b: 0 }, emissiveIntensity: 1.5
     })
-    bullets.push({ entity: e, active: false, pos: Vector3.create(0, -50, 0), dir: Vector3.create(0, 0, 1), speed: 15, elapsed: 0, maxTime: 3 })
+    bullets.push({ entity: e, active: false, pos: {x:0,y:-50,z:0}, dir: {x:0,y:0,z:0}, speed: 15, elapsed: 0, maxTime: 3 })
   }
 }
 
 function fireBullet(origin: Vector3, dir: Vector3, speed: number): void {
   const b = bullets.find(b => !b.active)
   if (!b) return
-  b.active = true; b.pos = Vector3.create(origin.x, origin.y, origin.z)
-  b.dir = Vector3.create(dir.x, dir.y, dir.z); b.speed = speed; b.elapsed = 0
+  b.active = true; b.pos = {x: origin.x, y: origin.y, z: origin.z}
+  b.dir = {x: dir.x, y: dir.y, z: dir.z}; b.speed = speed; b.elapsed = 0
   const t = Transform.getMutableOrNull(b.entity)
   if (!t) return
   t.position = Vector3.create(origin.x, origin.y, origin.z)
@@ -185,7 +185,7 @@ export function setupHZTurret(): void {
       if (t) t.position = Vector3.create(b.pos.x, b.pos.y, b.pos.z)
       const dx = pp.x - b.pos.x; const dz = pp.z - b.pos.z
       if (Math.sqrt(dx*dx + dz*dz) < 0.6) {
-        Physics.applyKnockbackToPlayer({ direction: Vector3.create(b.dir.x, 0.3, b.dir.z), falloff: 1, magnitude: 8 })
+        Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 8)
         console.log('[HZ7] BULLET HIT')
         b.active = false
         const tb = Transform.getMutableOrNull(b.entity)
@@ -402,10 +402,7 @@ export function setupHZLaserTurret(): void {
     const across = Math.sqrt(crossX*crossX + crossZ*crossZ)  // distance from beam axis
 
     if (along >= 0 && along <= BEAM_LENGTH && across < BEAM_WIDTH * 0.6) {
-      Physics.applyKnockbackToPlayer({
-        direction: Vector3.create(-fwdX, 0.2, -fwdZ),
-        falloff: 1, magnitude: 6
-      })
+      Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 6)
       playerHitImmunity = 0.8
       console.log('[HZ8] LASER HIT — knockback')
     }
