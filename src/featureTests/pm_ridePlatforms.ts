@@ -66,8 +66,8 @@ import { createStation, createButton, STATUS_COLOR } from './testUtils'
 interface RidePlatformState {
   entity:          ReturnType<typeof engine.addEntity>
   triggerEntity:   ReturnType<typeof engine.addEntity>
-  currentPos:      Vector3
-  lastPos:         Vector3
+  currentPos:      {x:number; y:number; z:number}
+  lastPos:         {x:number; y:number; z:number}
   playerOn:        boolean
 }
 
@@ -76,9 +76,9 @@ function setupPlatformTrigger(
   triggerSize: Vector3,
   triggerYOffset: number
 ): void {
-  TriggerArea.create(state.triggerEntity, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(triggerSize.x, triggerSize.y, triggerSize.z) }]
-  })
+  TriggerArea.setBox(state.triggerEntity)
+  const _tt = Transform.getMutableOrNull(state.triggerEntity)
+  if (_tt) { _tt.scale = { x: triggerSize.x, y: triggerSize.y, z: triggerSize.z } }
   triggerAreaEventsSystem.onTriggerEnter(state.triggerEntity, (r) => {
     if (r.trigger?.entity !== engine.PlayerEntity) return
     state.playerOn = true
