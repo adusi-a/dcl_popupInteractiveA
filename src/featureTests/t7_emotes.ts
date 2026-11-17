@@ -53,11 +53,11 @@ try {
   AvatarMask = null
 }
 
-const CUSTOM_EMOTE_PATH = 'assets/emotes/carry_emote.glb'  // 🟨 ASSET NEEDED
+const CUSTOM_EMOTE_PATH = 'assets/emotes/carry_emote.glb'  // ✅ placed (Avatar_CarryBox_emote from dcl-one)
 
 export function setupEmotesTest(): void {
   const { x, z } = { x: 108, z: 50 }
-  createStation('t7_emotes', 'T7 — AVATAR ANIMATIONS\nBuilt-in ✅ | Custom 🟨 file needed', STATUS_COLOR.NEEDS_ASSET)
+  createStation('t7_emotes', 'T7 — AVATAR ANIMATIONS\nBuilt-in ✅ | carry_emote.glb ✅', STATUS_COLOR.FULLY_CODED)
 
   // ─── A) Built-in emote buttons ────────────────────────────────────────────
   const builtIns: Array<{ id: string; label: string }> = [
