@@ -80,7 +80,7 @@ function checkRadialDamage(
   if (dist < hitRadius) {
     const nx = dist > 0.1 ? dx / dist : knockbackDir.x
     const nz = dist > 0.1 ? dz / dist : knockbackDir.z
-    Physics.applyKnockbackToPlayer({ direction: Vector3.create(nx, 0.4, nz), falloff: 1, magnitude })
+    Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), magnitude)
     immunity.value = 1.0
     console.log(`[${logTag}] HIT — knockback`)
   }
