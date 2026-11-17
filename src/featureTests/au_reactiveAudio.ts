@@ -222,16 +222,22 @@ export function setupAUPool(): void {
   }
 
   let fireCount = 0
+  // Time-based slot tracking: AudioSource.playing doesn't update after clip ends,
+  // so track when each slot was last fired and release after estimated clip duration
+  const CLIP_DURATION = 0.5  // conservative estimate for beep_ui.wav (~0.3s)
+  const slotFiredAt = new Array(POOL_SIZE).fill(-999)  // seconds, initialized to 'never fired'
+  let poolTime = 0
+  engine.addSystem((dt: number) => { poolTime += dt }, 1)
+
   const statusLbl = engine.addEntity()
   Transform.create(statusLbl, { position: Vector3.create(x, 2.5, z) }); Billboard.create(statusLbl, {})
   TextShape.create(statusLbl, { text: `Pool: ${POOL_SIZE} slots\nFired: 0`, fontSize: 1.3, textColor: Color4.White() })
 
   function playFromPool(): void {
-    // Find next available slot
+    // Find next available slot using time-based tracking (not AudioSource.playing which doesn't auto-reset)
     let slotIdx = -1
     for (let i = 0; i < POOL_SIZE; i++) {
-      const a = AudioSource.getOrNull(pool[i])
-      if (!a?.playing) { slotIdx = i; break }
+      if (poolTime - slotFiredAt[i] >= CLIP_DURATION) { slotIdx = i; break }
     }
 
     if (slotIdx < 0) {
@@ -240,17 +246,19 @@ export function setupAUPool(): void {
     }
 
     fireCount++
+    slotFiredAt[slotIdx] = poolTime
     const a = AudioSource.getMutable(pool[slotIdx])
     a.playing = false; a.playing = true  // restart
 
-    // Flash the visual
+    // Flash the visual for CLIP_DURATION to show when slot is busy
     Material.setPbrMaterial(poolVisuals[slotIdx], { albedoColor: Color4.create(0.3, 0.9, 1, 1), emissiveColor: { r: 0.1, g: 0.4, b: 0.5 }, emissiveIntensity: 1 })
-    let flashT = 0.3
-    const flashSys = engine.addSystem((dt: number) => {
+    let flashT = CLIP_DURATION
+    let flashDone = false
+    engine.addSystem((dt: number) => {
+      if (flashDone) return
       flashT -= dt
       if (flashT <= 0) {
-    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
-        engine.removeSystem(flashSys)
+        flashDone = true
         Material.setPbrMaterial(poolVisuals[slotIdx], { albedoColor: Color4.create(0.2, 0.2, 0.2, 1) })
       }
     }, 5)
@@ -264,13 +272,15 @@ export function setupAUPool(): void {
   pointerEventsSystem.onPointerDown({ entity: playBtn, opts: { button: 1, hoverText: '[E] Play once' } }, playFromPool)
 
   // Rapid burst button (plays 3 in quick succession)
+  // Note: engine.addSystem() returns void in SDK 7.33, so removeSystem can't use the return value.
+  // Use a fired-once flag instead to prevent the system from repeating indefinitely.
   const burstBtn = createButton(x + 1, 0.8, z - 3.6, '⚡ Burst ×3', Color4.create(0.5, 0.3, 0.1, 1))
   pointerEventsSystem.onPointerDown({ entity: burstBtn, opts: { button: 1, hoverText: '[E] Burst 3 sounds' } }, () => {
     playFromPool()
-    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
-    let t = 0.1; const s1 = engine.addSystem((dt: number) => { t -= dt; if (t <= 0) { engine.removeSystem(s1); playFromPool() } }, 5)
-    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
-    let t2 = 0.2; const s2 = engine.addSystem((dt: number) => { t2 -= dt; if (t2 <= 0) { engine.removeSystem(s2); playFromPool() } }, 5)
+    let t = 0.1; let f1 = false
+    engine.addSystem((dt: number) => { if (f1) return; t -= dt; if (t <= 0) { f1 = true; playFromPool() } }, 5)
+    let t2 = 0.2; let f2 = false
+    engine.addSystem((dt: number) => { if (f2) return; t2 -= dt; if (t2 <= 0) { f2 = true; playFromPool() } }, 5)
   })
 
   const info = engine.addEntity()
