@@ -230,13 +230,11 @@ export function setupHZDisappearFloor(): void {
       position: Vector3.create(tp.x, tp.y + 0.5, tp.z),
       scale: Vector3.create(1.8, 0.8, 1.8)
     })
-    TriggerArea.create(triggerEntity, {
-      triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(1.8, 0.8, 1.8) }]
-    })
+    TriggerArea.setBox(triggerEntity)
 
     const tileEntryRef = tileEntry  // capture for closure
-    triggerAreaEventsSystem.onEnterArea(triggerEntity, (r) => {
-      if (r.otherEntity !== engine.PlayerEntity) return
+    triggerAreaEventsSystem.onTriggerEnter(triggerEntity, (r) => {
+      if (r.trigger?.entity !== engine.PlayerEntity) return
       if (tileEntryRef.state === 'solid') {
         tileEntryRef.state = 'warning'
         tileEntryRef.timer = tileEntryRef.warnTime
