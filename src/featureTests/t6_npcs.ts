@@ -56,11 +56,11 @@ try {
   console.warn('[T6] dcl-npc-toolkit not installed — run: npm install dcl-npc-toolkit')
 }
 
-const NPC_GLB = 'assets/models/npc_guard.glb'  // 🟨 ASSET NEEDED
+const NPC_GLB = 'assets/models/npc_guard.glb'  // ✅ placed (bipedA from GhostTown V1)
 
 export function setupNPCTest(): void {
   const { x, z } = { x: 96, z: 50 }
-  createStation('t6_npcs', 'T6 — NPC TOOLKIT\nnpm install + asset needed', STATUS_COLOR.NEEDS_INSTALL)
+  createStation('t6_npcs', 'T6 — NPC TOOLKIT\ndcl-npc-toolkit installed ✔', STATUS_COLOR.NEEDS_ASSET)
 
   if (!NPC) {
     // Show "needs install" sign instead
