@@ -57,7 +57,8 @@ export function triggerDeathSequence(respawnPos: Vector3, onComplete?: () => voi
   })
   AvatarModifierArea.create(freezeArea, {
     area: Vector3.create(10, 4, 10),
-    modifiers: [AvatarModifierType.AMT_HIDE_AVATARS]
+    modifiers: [AvatarModifierType.AMT_HIDE_AVATARS],
+    excludeIds: []
   })
 
   // Staged timer system
