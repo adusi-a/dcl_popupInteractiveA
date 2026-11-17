@@ -143,6 +143,7 @@ export function setupEVOrNot(): void {
       TextShape.getMutable(resultLbl).textColor = Color4.create(0.3, 0.9, 0.5, 1)
       emit('or_gate_fired', { source: name })
       console.log(`[EV4] OR gate fired by ${name}`)
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
       let t = 1.5; const sys = engine.addSystem((dt: number) => { t -= dt; if (t <= 0) { engine.removeSystem(sys); TextShape.getMutable(resultLbl).text = 'Waiting...'; TextShape.getMutable(resultLbl).textColor = Color4.White() } }, 5)
     })
   }
