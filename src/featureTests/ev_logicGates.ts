@@ -85,16 +85,16 @@ export function setupEVAndGate(): void {
 
     const trigger = engine.addEntity()
     Transform.create(trigger, { position: Vector3.create(pp.x, pp.y + 0.5, pp.z), scale: Vector3.create(1.6, 1.0, 1.6) })
-    TriggerArea.create(trigger, { triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(1.6, 1.0, 1.6) }] })
+    TriggerArea.setBox(trigger)
 
     const pi = i; const pkk = pk
-    triggerAreaEventsSystem.onEnterArea(trigger, (r) => {
-      if (r.otherEntity !== engine.PlayerEntity) return
+    triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => {
+      if (r.trigger?.entity !== engine.PlayerEntity) return
       Material.setPbrMaterial(plates[pi], { albedoColor: Color4.create(0.2, 0.9, 0.3, 1), emissiveColor: { r: 0, g: 0.4, b: 0 }, emissiveIntensity: 0.5 })
       andGateSet(gate, pkk, true)
     })
-    triggerAreaEventsSystem.onExitArea(trigger, (r) => {
-      if (r.otherEntity !== engine.PlayerEntity) return
+    triggerAreaEventsSystem.onTriggerExit(trigger, (r) => {
+      if (r.trigger?.entity !== engine.PlayerEntity) return
       Material.setPbrMaterial(plates[pi], { albedoColor: Color4.create(0.6, 0.3, 0.3, 1) })
       andGateSet(gate, pkk, false)
     })
