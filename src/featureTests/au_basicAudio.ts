@@ -198,10 +198,10 @@ export function setupAUAmbientZone(): void {
   // Zone trigger
   const trigger = engine.addEntity()
   Transform.create(trigger, { position: Vector3.create(x, 1.0, z), scale: Vector3.create(6.0, 2.0, 6.0) })
-  TriggerArea.create(trigger, { triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(6.0, 2.0, 6.0) }] })
+  TriggerArea.setBox(trigger)
 
-  triggerAreaEventsSystem.onEnterArea(trigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     playerInZone = true; targetVolume = 0.75
     AudioSource.getMutable(ambientAudio).playing = true
     Material.setPbrMaterial(zonePad, { albedoColor: Color4.create(0.5, 0.2, 0.9, 0.5), emissiveColor: { r: 0.2, g: 0, b: 0.4 }, emissiveIntensity: 0.3 })
@@ -209,8 +209,8 @@ export function setupAUAmbientZone(): void {
     TextShape.getMutable(statusLbl).textColor = Color4.create(0.8, 0.5, 1, 1)
     console.log('[AU3] Player entered zone — ambient music fade in')
   })
-  triggerAreaEventsSystem.onExitArea(trigger, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  triggerAreaEventsSystem.onTriggerExit(trigger, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     playerInZone = false; targetVolume = 0
     Material.setPbrMaterial(zonePad, { albedoColor: Color4.create(0.3, 0.1, 0.5, 0.4) })
     TextShape.getMutable(statusLbl).text = '🎵 Enter zone\nto hear music'
