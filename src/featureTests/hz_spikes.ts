@@ -157,10 +157,7 @@ function ensureSpikeSystem(): void {
           const dx = pp.x - tipX; const dy = pp.y - 1.0 - tipY; const dz = pp.z - tipZ
           const dist = Math.sqrt(dx*dx + dz*dz)  // XZ plane distance
           if (dist < h.config.hitRadius && h.hitImmunity <= 0) {
-            Physics.applyKnockbackToPlayer({
-              direction: Vector3.create(h.spikeDir.x, 0.4, h.spikeDir.z),
-              falloff: 1, magnitude: 10
-            })
+            Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 10)
             h.hitImmunity = 1.2; h.hitCount++
             TextShape.getMutable(h.hitSignEntity).text = `⚡ HIT! (${h.hitCount})`
             TextShape.getMutable(h.hitSignEntity).textColor = Color4.create(1, 0.2, 0.2, 1)
@@ -318,11 +315,9 @@ export function setupHZSpikeWall(): void {
     position: Vector3.create(x, 0.9, z + 1.5),
     scale: Vector3.create(3.5, 1.5, 2.0)
   })
-  TriggerArea.create(triggerEntity, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(3.5, 1.5, 2.0) }]
-  })
-  triggerAreaEventsSystem.onEnterArea(triggerEntity, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  TriggerArea.setBox(triggerEntity)
+  triggerAreaEventsSystem.onTriggerEnter(triggerEntity, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     if (entry.state === 'idle') {
       entry.state = 'warning'; entry.timer = entry.config.warnTime
       setWallColor(entry.wallEntity, Color4.create(1, 0.3, 0, 1))
