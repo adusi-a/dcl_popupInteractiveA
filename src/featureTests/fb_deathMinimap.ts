@@ -38,7 +38,7 @@ export function triggerDeathSequence(respawnPos: Vector3, onComplete?: () => voi
   // Step 1: Black out camera (position VirtualCamera looking at black box)
   const blackCam = engine.addEntity()
   Transform.create(blackCam, { position: Vector3.create(80, 1.5, 70) }) // near spawn
-  VirtualCamera.create(blackCam, { defaultTransition: { $case: "speed" as const, speed: 30 } })
+  VirtualCamera.create(blackCam, { defaultTransition: { transitionMode: 2, speed: 30 } as any })
 
   // Black plane in front of camera
   const blackPlane = engine.addEntity()
@@ -81,6 +81,7 @@ export function triggerDeathSequence(respawnPos: Vector3, onComplete?: () => voi
           stage = 3
           engine.removeEntityWithChildren(freezeArea)
           deathState = 'alive'
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
           engine.removeSystem(cleanUp)
           if (onComplete) onComplete()
           console.log('[FB8] Respawn complete — player free')
