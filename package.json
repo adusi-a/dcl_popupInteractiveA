@@ -24,6 +24,6 @@
     "trailingComma": "none"
   },
   "dependencies": {
-    "dcl-npc-toolkit": "latest"
+    "dcl-npc-toolkit": "^1.8.1"
   }
 }
