@@ -119,6 +119,7 @@ export function setupCBHoming(): void {
       Transform.getMutable(orbTrail).position = Vector3.create(0, -50, 0)
       console.log('[CB3] ORB HIT — knockback + respawn 2s')
       let respawnTimer = 2.0
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
       const respawn = engine.addSystem((dt2: number) => { respawnTimer -= dt2; if (respawnTimer <= 0) { engine.removeSystem(respawn); launchOrb() } }, 15)
       return
     }
@@ -127,6 +128,7 @@ export function setupCBHoming(): void {
       orbActive = false; Transform.getMutable(orb).position = Vector3.create(0, -50, 0)
       console.log('[CB3] Orb expired — relaunching in 2s')
       let t = 2.0
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
       const r = engine.addSystem((dt2: number) => { t -= dt2; if (t <= 0) { engine.removeSystem(r); launchOrb() } }, 15)
     }
   }, 10)
@@ -136,6 +138,7 @@ export function setupCBHoming(): void {
 
   // Auto-launch after 2s
   let autoTimer = 2.0
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
   const autoLaunch = engine.addSystem((dt: number) => { autoTimer -= dt; if (autoTimer <= 0) { engine.removeSystem(autoLaunch); launchOrb() } }, 15)
 
   const info = engine.addEntity()
