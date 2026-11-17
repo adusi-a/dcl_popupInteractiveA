@@ -130,7 +130,8 @@ export function setupParticlesTest(): void {
     playing: true
   })
   // Loop the tween
-  TweenLoop.createOrReplace(campfireFallback, { mode: 'pingpong' } as any)
+  // TweenLoop ping-pong: use Tween pairs instead
+  // TweenLoop.createOrReplace not available in SDK 7.33 — skipped
 
   const campfireLabel = engine.addEntity()
   Transform.create(campfireLabel, { position: Vector3.create(x - 2.5, 2.5, z - 2) })
