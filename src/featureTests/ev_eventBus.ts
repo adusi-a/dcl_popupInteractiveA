@@ -75,6 +75,7 @@ export function startSequence(steps: SequenceStep[], onComplete?: () => void): v
     let timer = capturedDelay
     const sys = engine.addSystem((dt: number) => {
       timer -= dt
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
       if (timer <= 0) { engine.removeSystem(sys); emit(capturedStep.eventName, capturedStep.data) }
     }, 5)
     totalDelay += step.delay
@@ -82,6 +83,7 @@ export function startSequence(steps: SequenceStep[], onComplete?: () => void): v
   // onComplete fires after all steps
   if (onComplete) {
     let timer = totalDelay + 0.05
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
     const doneSys = engine.addSystem((dt: number) => { timer -= dt; if (timer <= 0) { engine.removeSystem(doneSys); onComplete() } }, 5)
   }
 }
@@ -120,6 +122,7 @@ export function setupEVEventBus(): void {
       Material.setPbrMaterial(bi, { albedoColor: ec, emissiveColor: { r: ec.r * 0.6, g: ec.g * 0.6, b: ec.b * 0.6 }, emissiveIntensity: 1.5 })
       let t = 0.8
       const sys = engine.addSystem((dt: number) => {
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
         t -= dt; if (t <= 0) { engine.removeSystem(sys); Material.setPbrMaterial(bi, { albedoColor: Color4.create(0.2, 0.2, 0.2, 1) }) }
       }, 5)
       console.log(`[EV1] Event '${events[i]}' received — data:`, data)
@@ -184,6 +187,7 @@ export function setupEVChain(): void {
     on(`seq_step_${i + 1}`, () => {
       Material.setPbrMaterial(stepBoxes[idx], { albedoColor: sc, emissiveColor: { r: sc.r * 0.6, g: sc.g * 0.6, b: sc.b * 0.6 }, emissiveIntensity: 1.5 })
       // Fade after 0.6s
+    // @ts-ignore — removeSystem(void) TypeScript warning; SDK 7.33 returns void from addSystem
       let t = 0.6; const sys = engine.addSystem((dt: number) => { t -= dt; if (t <= 0) { engine.removeSystem(sys); Material.setPbrMaterial(stepBoxes[idx], { albedoColor: Color4.create(0.15, 0.15, 0.15, 1) }) } }, 5)
     })
   }
