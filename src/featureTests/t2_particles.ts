@@ -41,12 +41,13 @@ import { createStation, createButton, STATUS_COLOR } from './testUtils'
 let ParticleSystem: any
 let PBParticleSystem: any
 try {
+  // @ts-ignore — require works in DCL/esbuild QuickJS context
   const sdkEcs = require('@dcl/sdk/ecs') as any
   ParticleSystem = sdkEcs.ParticleSystem
   PBParticleSystem = sdkEcs.PBParticleSystem
 } catch {
   ParticleSystem = null
-  console.warn('[T2] ParticleSystem not found in SDK — update @dcl/sdk to latest')
+  console.error('[T2] ParticleSystem not found in SDK — update @dcl/sdk to latest')
 }
 
 function createParticleEmitter(
@@ -124,12 +125,12 @@ export function setupParticlesTest(): void {
       end: Vector3.create(0.5, 0.6, 0.5)
     } },
     duration: 600,
-    easingFunction: EasingFunction.EF_EASESINEQUAD,
+    easingFunction: EasingFunction.EF_EASEINQUAD,
     currentTime: 0,
     playing: true
   })
   // Loop the tween
-  TweenLoop.create(campfireFallback, { mode: 'pingpong' } as any)
+  TweenLoop.createOrReplace(campfireFallback, { mode: 'pingpong' } as any)
 
   const campfireLabel = engine.addEntity()
   Transform.create(campfireLabel, { position: Vector3.create(x - 2.5, 2.5, z - 2) })
@@ -226,6 +227,6 @@ export function setupParticlesTest(): void {
 
   console.log('[T2] Particle System test station initialized')
   if (!ParticleSystem) {
-    console.warn('[T2] ⚠️  ParticleSystem unavailable — update SDK to see particles')
+    console.error('[T2] ⚠️  ParticleSystem unavailable — update SDK to see particles')
   }
 }
