@@ -172,7 +172,8 @@ export function setupCBStunZone(): void {
     })
     AvatarModifierArea.create(stunModifierEntity, {
       area: Vector3.create(10, 4, 10),
-      modifiers: [AvatarModifierType.AMT_HIDE_AVATARS]
+      modifiers: [AvatarModifierType.AMT_HIDE_AVATARS],
+      excludeIds: []
     })
 
     TextShape.getMutable(statusLbl).text = `⚡ STUNNED! ${STUN_DURATION.toFixed(0)}s`
