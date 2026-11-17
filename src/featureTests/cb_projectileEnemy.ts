@@ -113,7 +113,7 @@ export function setupCBHoming(): void {
     // Check player hit
     const ph = Math.sqrt((pT.position.x - orbPos.x)**2 + (pT.position.z - orbPos.z)**2)
     if (ph < HIT_RADIUS && hitImmunity <= 0) {
-      Physics.applyKnockbackToPlayer({ direction: Vector3.create(orbDirX, 0.3, orbDirZ), falloff: 1, magnitude: 8 })
+      Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 8)
       hitImmunity = 1.5; orbActive = false
       Transform.getMutable(orb).position = Vector3.create(0, -50, 0)
       Transform.getMutable(orbTrail).position = Vector3.create(0, -50, 0)
@@ -215,7 +215,7 @@ export function setupCBMeleeSwing(): void {
       if (Math.sqrt(dx*dx + dz*dz) < HIT_RADIUS) {
         const nx = dx / Math.max(0.1, Math.sqrt(dx*dx + dz*dz))
         const nz = dz / Math.max(0.1, Math.sqrt(dx*dx + dz*dz))
-        Physics.applyKnockbackToPlayer({ direction: Vector3.create(nx, 0.4, nz), falloff: 1, magnitude: 10 })
+        Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 10)
         immunity.value = 1.0; console.log('[CB4] MELEE SWING HIT')
       }
     }
