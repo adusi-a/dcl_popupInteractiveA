@@ -19,7 +19,7 @@
 
 import {
   engine, Transform, MeshRenderer, MeshCollider, Material, TextShape, Billboard,
-  pointerEventsSystem, ColliderLayer, VirtualCamera
+  pointerEventsSystem, ColliderLayer, VirtualCamera, MainCamera
 } from '@dcl/sdk/ecs'
 import { Vector3, Color4, Quaternion } from '@dcl/sdk/math'
 import { Physics } from '@dcl/sdk/ecs'
@@ -43,7 +43,7 @@ export function triggerScreenShake(intensity: number, duration: number): void {
     Transform.create(shakeCamEntity, { position: Vector3.create(pT.position.x, pT.position.y + 1.6, pT.position.z) })
   }
   VirtualCamera.createOrReplace(shakeCamEntity, {
-    defaultTransition: { transitionMode: 2, speed: 20 } as any
+    defaultTransition: { transitionMode: { $case: 'speed', speed: 20 } } as any
   })
   console.log(`[FB1] Screen shake — intensity=${intensity}, duration=${duration}s`)
 }
@@ -65,8 +65,6 @@ function ensureShakeSystem(): void {
     // Try to read camera rotation (SDK 7.4.0+)
     let camRot = Quaternion.Identity()
     try {
-  // @ts-ignore — require works in DCL/esbuild QuickJS context
-      const { MainCamera } = require('@dcl/sdk/ecs') as any
       const mc = MainCamera?.getOrNull(engine.PlayerEntity)
       if (mc?.rotation) camRot = mc.rotation
     } catch {}
