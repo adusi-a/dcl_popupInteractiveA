@@ -137,9 +137,7 @@ export function setupHZThwomp(): void {
     position: Vector3.create(x, 2.5, z),
     scale: Vector3.create(BLOCK_HALF * 2, 5, BLOCK_HALF * 2)
   })
-  TriggerArea.create(triggerEntity, {
-    triggers: [{ type: 1, position: Vector3.create(0, 0, 0), scale: Vector3.create(BLOCK_HALF * 2, 5, BLOCK_HALF * 2) }]
-  })
+  TriggerArea.setBox(triggerEntity)
 
   // ─── State ───────────────────────────────────────────────────────────────────
   type ThwompState = 'waiting' | 'shaking' | 'falling' | 'sitting' | 'rising'
@@ -151,8 +149,8 @@ export function setupHZThwomp(): void {
   let playerHit = false
   let hitImmunity = 0
 
-  triggerAreaEventsSystem.onEnterArea(triggerEntity, (r) => {
-    if (r.otherEntity !== engine.PlayerEntity) return
+  triggerAreaEventsSystem.onTriggerEnter(triggerEntity, (r) => {
+    if (r.trigger?.entity !== engine.PlayerEntity) return
     if (state === 'waiting') {
       state = 'shaking'
       stateTimer = SHAKE_TIME
@@ -214,10 +212,7 @@ export function setupHZThwomp(): void {
           const blockBottom = newY - BLOCK_HEIGHT * 0.5
           if (blockBottom <= pp.y + 1.0) {
             // HIT
-            Physics.applyKnockbackToPlayer({
-              direction: Vector3.create(dx / Math.max(0.1, xyDist), 0.8, dz / Math.max(0.1, xyDist)),
-              falloff: 1, magnitude: 15
-            })
+            Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), 15)
             playerHit = true
             hitImmunity = 2.0
             console.log('[HZ9] THWOMP HIT — knockback!')
