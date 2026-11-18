@@ -68,7 +68,7 @@ import { createStation, createButton, STATUS_COLOR } from './testUtils'
 // ─── Shared: radial proximity damage ─────────────────────────────────────────
 
 function checkRadialDamage(
-  hazardX: number, hazardZ: number,
+  hazardX: number, hazardZ: number, hazardY: number,
   hitRadius: number, knockbackDir: Vector3, magnitude: number,
   immunity: { value: number }, dt: number, logTag: string
 ): void {
@@ -78,9 +78,8 @@ function checkRadialDamage(
   const dx = pT.position.x - hazardX; const dz = pT.position.z - hazardZ
   const dist = Math.sqrt(dx*dx + dz*dz)
   if (dist < hitRadius) {
-    const nx = dist > 0.1 ? dx / dist : knockbackDir.x
-    const nz = dist > 0.1 ? dz / dist : knockbackDir.z
-    Physics.applyKnockbackToPlayer(Vector3.create(0, 0, 0), magnitude)
+    // Push away from the actual hazard position (not from world origin)
+    Physics.applyKnockbackToPlayer(Vector3.create(hazardX, hazardY, hazardZ), magnitude)
     immunity.value = 1.0
     console.log(`[${logTag}] HIT — knockback`)
   }
@@ -104,14 +103,17 @@ export function setupPMSaw(): void {
   MeshRenderer.setCylinder(post)
   Material.setPbrMaterial(post, { albedoColor: Color4.create(0.5, 0.5, 0.5, 1) })
 
-  // Saw blade disc (main)
+  // Saw blade disc (main) — NO physics collider; radial proximity check handles damage
+  // A rotating cylinder collider spins and grabs the player even outside the visual radius
   const blade = engine.addEntity()
   Transform.create(blade, {
     position: Vector3.create(x, 0.9, z),
     scale: Vector3.create(bladeRadius * 2, 0.12, bladeRadius * 2)
   })
   MeshRenderer.setCylinder(blade)
-  MeshCollider.setCylinder(blade, ColliderLayer.CL_PHYSICS)
+  // MeshCollider intentionally omitted — the per-frame radial dist check below is
+  // the detection method.  A CL_PHYSICS cylinder collider on a rotating entity has
+  // a larger effective reach than the visual and spins the player camera wildly.
   Material.setPbrMaterial(blade, {
     albedoColor: Color4.create(0.75, 0.75, 0.75, 1),
     emissiveColor: { r: 0.1, g: 0.1, b: 0.1 }, emissiveIntensity: 0.4
@@ -169,7 +171,7 @@ export function setupPMSaw(): void {
     }
 
     const prevImmunity = immunity.value
-    checkRadialDamage(x, z, bladeRadius, Vector3.create(0, 0, 1), 10, immunity, dt, 'PM5')
+    checkRadialDamage(x, z, 0.9, bladeRadius, Vector3.create(0, 0, 1), 10, immunity, dt, 'PM5')
     if (prevImmunity > 0.5 && immunity.value <= 0.5) {
       TextShape.getMutable(hitSign).text = '⚡ HIT!'
       setTimeout(() => { TextShape.getMutable(hitSign).text = '' }, 800)
