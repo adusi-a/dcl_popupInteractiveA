@@ -237,13 +237,16 @@ export function setupMLShelfGhost(): void {
     albedoColor: Color4.create(0.1, 0.1, 0.1, 0) // transparent until thrown
   })
 
+  // throwRadius matches triggerRadius so the ghost throws as soon as it spots
+  // the player in the aisle.  The original 2.5m required the player to be almost
+  // touching the shelf — deeper into the shelf than the aisle naturally takes them.
   ghosts.push({
     ghostEntity, bookEntity,
     shelfPos: Vector3.create(shelfPos.x, shelfPos.y, shelfPos.z),
     popPos:   Vector3.create(popPos.x,   popPos.y,   popPos.z),
     throwDir: {x: throwDir.x, y: throwDir.y, z: throwDir.z},
     triggerRadius: 4.0,
-    throwRadius:   2.5,
+    throwRadius:   3.5,  // was 2.5 — raised so ghost throws when player enters the aisle alert zone
     state: 'sleeping',
     cooldownTimer: 0,
     bookActive: false,
