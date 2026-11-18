@@ -67,7 +67,10 @@ interface FloorTileEntry {
   goneTime:  number
   restoreTime: number
   logTag:    string
-  onPlayerStep?: () => void  // Mode A: callback when player steps on this tile
+  tileX:     number   // world X center — for proximity check on restore
+  tileZ:     number   // world Z center
+  tileY:     number   // world Y center
+  onPlayerStep?: () => void
 }
 
 interface CycleFloorEntry {
@@ -148,6 +151,20 @@ function ensureFloorSystem(): void {
             })
             tile.state = 'solid'
             console.log(`[${tile.logTag}] SOLID — collider restored`)
+            // onTriggerEnter won't fire if the player is ALREADY in the trigger zone
+            // when the tile restores (they were standing there during gone/restoring).
+            // Proximity check here catches that case.
+            const pT2 = Transform.getOrNull(engine.PlayerEntity)
+            if (pT2) {
+              const rdx = pT2.position.x - tile.tileX
+              const rdz = pT2.position.z - tile.tileZ
+              const rdy = pT2.position.y - tile.tileY
+              if (Math.abs(rdx) < 1.0 && Math.abs(rdz) < 1.0 && rdy > 0 && rdy < 2.0) {
+                tile.state = 'warning'
+                tile.timer = tile.warnTime
+                console.log(`[${tile.logTag}] Player on tile at restore — starting warning`)
+              }
+            }
           }
           break
         }
@@ -220,7 +237,8 @@ export function setupHZDisappearFloor(): void {
       entity: tileEntity,
       state: 'solid', timer: 0,
       baseColor, warnTime: 0.8, goneTime: 2.0, restoreTime: 0.6,
-      logTag: `HZ5-A${i + 1}`
+      logTag: `HZ5-A${i + 1}`,
+      tileX: tp.x, tileY: tp.y, tileZ: tp.z
     }
     floorTiles.push(tileEntry)
 
