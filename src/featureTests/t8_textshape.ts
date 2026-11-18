@@ -67,10 +67,15 @@ export function setupTextShapeTest(): void {
   })
 
   // ─── B) Non-billboard world-space sign (stationary, faces +Z) ─────────────
+  // DCL TextShape at rotation Y=180 faces the player (who approaches from +Z) but
+  // rotating 180° around Y flips the entity's local X axis, mirroring the text.
+  // Fix: scale.x = -1 un-mirrors by re-flipping local X. Backing board uses a
+  // separate entity at scale (1,1,1) so it stays behind the text.
   const worldSign = engine.addEntity()
   Transform.create(worldSign, {
     position: Vector3.create(x - 3, 1.8, z - 2),
-    rotation: Quaternion.fromEulerDegrees(0, 180, 0)   // face toward spawn side
+    rotation: Quaternion.fromEulerDegrees(0, 180, 0),
+    scale: Vector3.create(-1, 1, 1)   // negative X un-mirrors text at 180° rotation
   })
   TextShape.create(worldSign, {
     text: '← FICTION\n 2nd Floor →\n↓ EXIT',
