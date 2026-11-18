@@ -216,14 +216,21 @@ export function setupMLWanderingEnemy(): void {
     emissiveColor: { r: 0.5, g: 0.4, b: 0 }, emissiveIntensity: 1
   })
 
-  // Detection radius ring (visual guide — ring of small spheres)
+  // Detection radius ring (visual guide).
+  // The ring is drawn centered on NODE 0 (enemy start position), not the station
+  // center — detection is relative to wherever the ENEMY IS, so the ring moves
+  // with the enemy during patrol.  This ring is a static indicator of the range
+  // at the starting position only; during patrol the detection bubble travels with
+  // the enemy (shown in the info sign).
   const DETECT_RADIUS = 7.0
   const CONE_ANGLE = 60
+  const NODE0_X = x - 2.5   // patrol node 0 — enemy start
+  const NODE0_Z = z - 2.5
   const RING_SEGMENTS = 20
   for (let i = 0; i < RING_SEGMENTS; i++) {
     const angle = (i / RING_SEGMENTS) * Math.PI * 2
-    const rx = x + Math.cos(angle) * DETECT_RADIUS
-    const rz = z + Math.sin(angle) * DETECT_RADIUS
+    const rx = NODE0_X + Math.cos(angle) * DETECT_RADIUS
+    const rz = NODE0_Z + Math.sin(angle) * DETECT_RADIUS
     const dot = engine.addEntity()
     Transform.create(dot, {
       position: Vector3.create(rx, 0.52, rz),
@@ -332,7 +339,7 @@ export function setupMLWanderingEnemy(): void {
   Transform.create(info, { position: Vector3.create(x, 3.2, z - 3.6) })
   Billboard.create(info, {})
   TextShape.create(info, {
-    text: '🟡 Cone = detection arc (front)\n🟣 Ring = max detect radius (7m)\nSame detector works for GhostTown ghosts\nMovement system is fully separate',
+    text: '🟡 Cone = detection arc (front)\n🟣 Ring = detect radius at node 0 (7m)\nRing moves with enemy during patrol!\nChase: goes directly to closest node\nSame detector works for GhostTown ghosts',
     fontSize: 1.1, textColor: Color4.create(0.9, 1, 0.8, 1),
     outlineColor: Color4.Black(), outlineWidth: 0.08
   })
