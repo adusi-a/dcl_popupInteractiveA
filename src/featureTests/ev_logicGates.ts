@@ -53,6 +53,13 @@ export function setupEVAndGate(): void {
     Vector3.create(x + 2.5, 0.52, z - 0.5),
   ]
   const plates: ReturnType<typeof engine.addEntity>[] = []
+
+  // STICKY MODE: once a plate is activated it stays ON — allows one player to
+  // step each pad in sequence rather than requiring 3 simultaneous players.
+  // Press the [E] STICKY toggle to switch modes.  Reset button clears all plates.
+  let stickyMode = false
+  const activatedPlates = new Set<string>()  // tracks which plates are locked on in sticky mode
+
   const gate: AndGate = {
     conditions: new Map([['plate_A', false], ['plate_B', false], ['plate_C', false]]),
     onAllTrue: () => {
@@ -69,6 +76,17 @@ export function setupEVAndGate(): void {
     }
   }
   const plateKeys = ['plate_A', 'plate_B', 'plate_C']
+
+  // "Door" entity — declared before loop so trigger callbacks can reference it
+  const door = engine.addEntity()
+  Transform.create(door, { position: Vector3.create(x, 1.2, z - 2.5), scale: Vector3.create(2.0, 2.4, 0.3) })
+  MeshRenderer.setBox(door)
+  MeshCollider.setBox(door, ColliderLayer.CL_PHYSICS)
+  Material.setPbrMaterial(door, { albedoColor: Color4.create(0.5, 0.2, 0.1, 1) })
+
+  const gateLbl = engine.addEntity()
+  Transform.create(gateLbl, { position: Vector3.create(x, 3.2, z - 2.5) }); Billboard.create(gateLbl, {})
+  TextShape.create(gateLbl, { text: '🔴 WAITING...', fontSize: 1.3, textColor: Color4.create(1, 0.5, 0.3, 1) })
 
   for (let i = 0; i < 3; i++) {
     const pp = platePositions[i]; const pk = plateKeys[i]
@@ -91,33 +109,53 @@ export function setupEVAndGate(): void {
     triggerAreaEventsSystem.onTriggerEnter(trigger, (r) => {
       if (r.trigger?.entity !== engine.PlayerEntity) return
       Material.setPbrMaterial(plates[pi], { albedoColor: Color4.create(0.2, 0.9, 0.3, 1), emissiveColor: { r: 0, g: 0.4, b: 0 }, emissiveIntensity: 0.5 })
+      if (stickyMode) activatedPlates.add(pkk)  // lock it on
       andGateSet(gate, pkk, true)
     })
     triggerAreaEventsSystem.onTriggerExit(trigger, (r) => {
       if (r.trigger?.entity !== engine.PlayerEntity) return
+      // In sticky mode: plate stays ON after player leaves
+      if (stickyMode && activatedPlates.has(pkk)) return
       Material.setPbrMaterial(plates[pi], { albedoColor: Color4.create(0.6, 0.3, 0.3, 1) })
       andGateSet(gate, pkk, false)
     })
   }
 
-  // "Door" entity that opens when AND gate fires
-  const door = engine.addEntity()
-  Transform.create(door, { position: Vector3.create(x, 1.2, z - 2.5), scale: Vector3.create(2.0, 2.4, 0.3) })
-  MeshRenderer.setBox(door)
-  MeshCollider.setBox(door, ColliderLayer.CL_PHYSICS)
-  Material.setPbrMaterial(door, { albedoColor: Color4.create(0.5, 0.2, 0.1, 1) })
+  // Sticky toggle button
+  const modeLbl = engine.addEntity()
+  Transform.create(modeLbl, { position: Vector3.create(x, 2.5, z + 2.5) }); Billboard.create(modeLbl, {})
+  TextShape.create(modeLbl, { text: '⬜ NORMAL mode\n(simultaneous)', fontSize: 1.1, textColor: Color4.White() })
 
-  const gateLbl = engine.addEntity()
-  Transform.create(gateLbl, { position: Vector3.create(x, 3.2, z - 2.5) }); Billboard.create(gateLbl, {})
-  TextShape.create(gateLbl, { text: '🔴 WAITING...', fontSize: 1.3, textColor: Color4.create(1, 0.5, 0.3, 1) })
+  const stickyBtn = createButton(x - 1.5, 0.9, z + 2.5, '⬜ Sticky OFF', Color4.create(0.3, 0.3, 0.6, 1))
+  pointerEventsSystem.onPointerDown({ entity: stickyBtn, opts: { button: 1, hoverText: '[E] Toggle sticky mode' } }, () => {
+    stickyMode = !stickyMode
+    const lbl = TextShape.getMutableOrNull(stickyBtn)
+    if (lbl) lbl.text = stickyMode ? '🟡 Sticky ON' : '⬜ Sticky OFF'
+    TextShape.getMutable(modeLbl).text = stickyMode
+      ? '🟡 STICKY mode\n(sequential, one player)'
+      : '⬜ NORMAL mode\n(simultaneous)'
+    console.log(`[EV3] Sticky mode: ${stickyMode}`)
+  })
+
+  // Reset button
+  const resetBtn = createButton(x + 1.5, 0.9, z + 2.5, '↺ Reset', Color4.create(0.5, 0.2, 0.1, 1))
+  pointerEventsSystem.onPointerDown({ entity: resetBtn, opts: { button: 1, hoverText: '[E] Reset all plates' } }, () => {
+    activatedPlates.clear()
+    for (let i = 0; i < 3; i++) {
+      Material.setPbrMaterial(plates[i], { albedoColor: Color4.create(0.6, 0.3, 0.3, 1) })
+      andGateSet(gate, plateKeys[i], false)
+    }
+    Material.setPbrMaterial(door, { albedoColor: Color4.create(0.5, 0.2, 0.1, 1) })
+    console.log('[EV3] All plates reset')
+  })
 
   const info = engine.addEntity()
   Transform.create(info, { position: Vector3.create(x, 4.5, z) }); Billboard.create(info, {})
   TextShape.create(info, {
-    text: 'andGateSet(gate, name, bool)\nAll conditions.values().every(v => v)\nStand on ALL 3 plates simultaneously',
+    text: 'andGateSet(gate, name, bool)\nAll conditions.values().every(v => v)\nNORMAL: stand on all 3 at once\nSTICKY: step each in sequence (1 player)',
     fontSize: 1.1, textColor: Color4.create(0.6, 1, 0.8, 1), outlineColor: Color4.Black(), outlineWidth: 0.08
   })
-  console.log('[EV3] AND gate initialized — 3 plates must all be active')
+  console.log('[EV3] AND gate initialized — normal + sticky modes')
 }
 
 // ─── Station: EV4 — OR + NOT Gates ───────────────────────────────────────────
