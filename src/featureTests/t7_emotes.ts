@@ -40,6 +40,7 @@ import {
   engine, Transform, MeshRenderer, MeshCollider, Material, TextShape, Billboard,
   pointerEventsSystem, ColliderLayer
 } from '@dcl/sdk/ecs'
+import { registerRespawnCallback } from './respawnSystem'
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { InputAction } from '@dcl/sdk/ecs'
 import { triggerEmote, triggerSceneEmote, stopEmote } from '~system/RestrictedActions'
@@ -171,24 +172,15 @@ export function setupEmotesTest(): void {
     textColor: Color4.create(1, 0.5, 0.7, 1), outlineColor: Color4.Black(), outlineWidth: 0.1
   })
 
-  // ─── E) Death-clear: stop any active emote when player respawns ─────────────────
-  // DCL doesn't auto-stop emotes on death/respawn, so a looping emote stays stuck
-  // after being killed.  Detect respawn by a sudden upward Y jump (>5m in one frame)
-  // = teleport to spawn point, then clear the active emote.
-  let prevPlayerY = 0
-  engine.addSystem((_dt: number) => {
-    const pT = Transform.getOrNull(engine.PlayerEntity)
-    if (!pT) return
-    const dy = pT.position.y - prevPlayerY
-    if (dy > 5) {  // sudden large upward jump = respawn teleport
-      stopEmote({})
-      emoteLooping = false
-      const lbl = TextShape.getMutableOrNull(loopBtn)
-      if (lbl) lbl.text = '[E] LOOP DANCE\nstart/stop'
-      console.log('[T7] Respawn detected — emote cleared')
-    }
-    prevPlayerY = pT.position.y
-  }, 50)
+  // ─── E) Death-clear via onRespawn hook ─────────────────────────────
+  // Uses the shared respawnSystem rather than a one-off Y-delta detect here.
+  registerRespawnCallback(() => {
+    stopEmote({})
+    emoteLooping = false
+    const lbl = TextShape.getMutableOrNull(loopBtn)
+    if (lbl) lbl.text = '[E] LOOP DANCE\nstart/stop'
+    console.log('[T7] Emote cleared on respawn')
+  })
 
   console.log('[T7] Avatar Animations test station initialized')
   console.log('[T7] 🟨 ASSET NEEDED: assets/emotes/carry_emote.glb')
