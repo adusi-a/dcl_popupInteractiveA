@@ -68,6 +68,7 @@ import {
   engine, Transform, MeshRenderer, MeshCollider, Material, TextShape, Billboard,
   TriggerArea, triggerAreaEventsSystem, ColliderLayer, pointerEventsSystem
 } from '@dcl/sdk/ecs'
+import { registerRespawnCallback } from './respawnSystem'
 import { Vector3, Color4, Quaternion } from '@dcl/sdk/math'
 import { Physics } from '@dcl/sdk/ecs'
 import { createStation, createButton, STATUS_COLOR } from './testUtils'
@@ -460,6 +461,15 @@ export function setupPMFan(): void {
   TextShape.create(info, {
     text: 'applyForceToPlayer() called every frame\nwhile in trigger zone (not just on enter)\nSame as T1 wind zone — now with visual',
     fontSize: 1.1, textColor: Color4.create(0.7, 0.9, 1, 1), outlineColor: Color4.Black(), outlineWidth: 0.08
+  })
+
+  // onRespawn: movePlayerTo() doesn't fire onTriggerExit, so clear fan force on death
+  registerRespawnCallback(() => {
+    if (playerInZone) {
+      playerInZone = false
+      Physics.removeForceFromPlayer(engine.RootEntity)
+      console.log('[PM9] Fan force cleared on respawn')
+    }
   })
 
   console.log('[PM9] Fan initialized — 7m zone, 8N force, +Z direction, 300 RPM')
