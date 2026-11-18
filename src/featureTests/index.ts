@@ -17,6 +17,8 @@
  * See /FEATURE_TEST_TODO.md for complete asset + control checklist.
  */
 
+// Shared onRespawn hook system — must be imported first so other modules can register callbacks
+import './respawnSystem'
 import { createZoneEntrance, createMLZoneEntrance, createHazardZoneEntrance, createSWZoneEntrance, createPMZoneEntrance, createFBZoneEntrance, createCBZoneEntrance, createEVZoneEntrance, createAUZoneEntrance, createPZZoneEntrance, createPSZoneEntrance, createTAZoneEntrance } from './testUtils'
 import { setupMLNodeWalker }     from './ml_nodeWalker'
 import { setupMLShelfGhost }     from './ml_shelfGhost'
