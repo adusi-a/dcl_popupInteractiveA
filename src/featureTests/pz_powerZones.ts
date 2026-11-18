@@ -22,6 +22,7 @@ import {
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { Physics } from '@dcl/sdk/ecs'
 import { createStation, STATUS_COLOR } from './testUtils'
+import { registerRespawnCallback } from './respawnSystem'
 
 // ─── PZ1 — Trampoline ─────────────────────────────────────────────────────────
 
@@ -79,8 +80,13 @@ export function setupPZAntiGrav(): void {
 
   engine.addSystem((_dt: number) => {
     if (!inZone) return
-    Physics.applyForceToPlayer(engine.RootEntity, Vector3.create(0, 15, 0) )  // counteracts gravity (~9.8) and then some
+    Physics.applyForceToPlayer(engine.RootEntity, Vector3.create(0, 15, 0) )
   }, 10)
+
+  // onRespawn: movePlayerTo() doesn't fire onTriggerExit, so clear force on death
+  registerRespawnCallback(() => {
+    if (inZone) { inZone = false; Physics.removeForceFromPlayer(engine.RootEntity); console.log('[PZ2] Force cleared on respawn') }
+  })
 }
 
 // ─── PZ3 — Repulsor Field ─────────────────────────────────────────────────────
@@ -186,6 +192,11 @@ export function setupPZSpeedPad(): void {
     if (!onPad) return
     Physics.applyForceToPlayer(engine.RootEntity, Vector3.create(padDir.x * BOOST, 0, padDir.z * BOOST) )
   }, 10)
+
+  // onRespawn: clear pad force if teleport skipped the trigger exit
+  registerRespawnCallback(() => {
+    if (onPad) { onPad = false; Physics.removeForceFromPlayer(engine.RootEntity); console.log('[PZ5] Force cleared on respawn') }
+  })
 
   const info = engine.addEntity(); Transform.create(info, { position: Vector3.create(x, 3.5, z) }); Billboard.create(info, {})
   TextShape.create(info, {
