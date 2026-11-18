@@ -29,6 +29,7 @@ import {
 import { Vector3, Color4, Quaternion } from '@dcl/sdk/math'
 import { Physics } from '@dcl/sdk/ecs'
 import { createStation, createButton, STATUS_COLOR } from './testUtils'
+import { registerRespawnCallback } from './respawnSystem'
 
 // ─── CB3 — Homing Projectile ──────────────────────────────────────────────────
 
@@ -65,9 +66,13 @@ export function setupCBHoming(): void {
   let orbActive = false; let orbPos = Vector3.create(0, -50, 0)
   let orbDirX = 0; let orbDirZ = 1
   let orbTravelled = 0; let hitImmunity = 0
+  // Set true on respawn to suppress auto-relaunch timers; cleared when player
+  // manually clicks Launch so play can resume intentionally.
+  let suppressRelaunch = false
 
   function launchOrb(): void {
     if (orbActive) return
+    if (suppressRelaunch) return  // player died — wait for manual launch
     orbActive   = true
     orbPos      = Vector3.create(LAUNCH_POS.x, LAUNCH_POS.y, LAUNCH_POS.z)
     orbDirX     = 0; orbDirZ = 1
@@ -134,7 +139,10 @@ export function setupCBHoming(): void {
   }, 10)
 
   const launchBtn = createButton(x, 0.8, z - 3.6, '◎ Launch Orb', Color4.create(0.5, 0.1, 0.8, 1))
-  pointerEventsSystem.onPointerDown({ entity: launchBtn, opts: { button: 1, hoverText: '[E] Launch' } }, launchOrb)
+  pointerEventsSystem.onPointerDown({ entity: launchBtn, opts: { button: 1, hoverText: '[E] Launch' } }, () => {
+    suppressRelaunch = false  // manual launch clears death suppress
+    launchOrb()
+  })
 
   // Auto-launch after 2s
   let autoTimer = 2.0
@@ -148,6 +156,20 @@ export function setupCBHoming(): void {
     text: 'turnRate=90°/s — dodge sideways\ndir lerped each frame toward player\nspeed=3m/s, maxRange=12m',
     fontSize: 1.1, textColor: Color4.create(0.9, 0.7, 1, 1), outlineColor: Color4.Black(), outlineWidth: 0.08
   })
+  // onRespawn: deactivate orb AND suppress auto-relaunch so the orb can't follow
+  // the player to their respawn location.  suppressRelaunch is cleared when the
+  // player manually clicks Launch — that's the intentional restart.
+  registerRespawnCallback(() => {
+    orbActive = false
+    suppressRelaunch = true  // blocks pending 2s-relaunch timers
+    hitImmunity = 0
+    const orbT2  = Transform.getMutableOrNull(orb)
+    const trlT2  = Transform.getMutableOrNull(orbTrail)
+    if (orbT2)  orbT2.position  = Vector3.create(0, -50, 0)
+    if (trlT2)  trlT2.position  = Vector3.create(0, -50, 0)
+    console.log('[CB3] Orb stopped on respawn — click Launch to restart')
+  })
+
   console.log('[CB3] HomingProjectile initialized — turnRate=90°/s, speed=3m/s')
 }
 
